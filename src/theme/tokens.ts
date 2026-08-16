@@ -30,18 +30,22 @@ export const dark = {
   bg: '#14100F', // warm charcoal, not #0A0A0A
   surface: '#1E1918',
   surface2: '#2A2321',
+  hairline: '#241D1B', // between rows — quieter than `border`, which draws cards
   border: '#3A302D',
   text: '#F5EFED',
   textDim: '#A79B97',
+  textMute: '#8E817D', // rank numerals below the podium, micro-labels
 } as const;
 
 export const light = {
   bg: '#FBF7F6',
   surface: '#FFFFFF',
   surface2: '#F4EEEC',
+  hairline: '#EFE6E3',
   border: '#E4D9D5',
   text: '#1A1413',
   textDim: '#6E605C',
+  textMute: '#8B7C77',
 } as const;
 
 export const signal = {

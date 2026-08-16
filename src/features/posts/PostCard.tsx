@@ -1,7 +1,5 @@
-import { Avatar, Box, IconButton, Paper, Stack, Typography } from '@mui/material';
+import { Avatar, Box, ButtonBase, IconButton, Paper, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import UpIcon from '@mui/icons-material/KeyboardArrowUpRounded';
-import DownIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import DeleteIcon from '@mui/icons-material/DeleteOutlineRounded';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ReactionBar } from '@/features/reactions/ReactionBar';
@@ -9,6 +7,7 @@ import { NO_REACTIONS } from '@/features/reactions/api';
 import { avatarProps } from '@/lib/avatar';
 import { avatarUrl } from '@/lib/supabase';
 import { formatShort } from '@/lib/time';
+import { ka } from '@/i18n/ka';
 import type { Member } from '@/lib/database.types';
 import type { VoteValue } from '@/features/standings/api';
 import type { ScoredPost } from './api';
@@ -26,9 +25,15 @@ interface PostCardProps {
   onAdminDelete?: () => void;
 }
 
-const MotionIconButton = motion.create(IconButton);
+const MotionButtonBase = motion.create(ButtonBase);
 
-/** Author is visible on posts — unlike votes, posts are signed (§1.4). */
+/**
+ * Author is visible on posts — unlike votes, posts are signed (§1.4).
+ *
+ * The vote controls carry their own count inside the pill rather than sitting
+ * next to a loose number. A post has exactly two scores and they belong to the
+ * buttons that change them.
+ */
 export function PostCard({
   post,
   author,
@@ -42,64 +47,73 @@ export function PostCard({
 }: PostCardProps) {
   const reduced = useReducedMotion();
   const nickname = author?.nickname ?? '—';
-  const press = reduced ? {} : { whileTap: { scale: 0.88 } };
+  const press = reduced ? {} : { whileTap: { scale: 0.94 } };
+  const ava = avatarProps(post.author_id, nickname, avatarUrl(author?.avatar_url ?? null));
 
   const voteButton = (direction: 1 | -1, count: number) => {
     const active = myVote === direction;
+    const tint = direction === 1 ? 'signal.up' : 'signal.down';
+
     return (
-      <Stack direction="row" spacing={0.25} alignItems="center">
-        <MotionIconButton
-          {...press}
-          size="small"
-          disabled={locked || !onVote}
-          aria-pressed={active}
-          aria-label={direction === 1 ? 'ზემოთ' : 'ქვემოთ'}
-          onClick={() => onVote?.(active ? null : direction)}
-          sx={{
-            width: 36,
-            height: 36,
-            color: active ? (direction === 1 ? 'signal.up' : 'signal.down') : 'text.secondary',
-          }}
-        >
-          {direction === 1 ? <UpIcon /> : <DownIcon />}
-        </MotionIconButton>
-        <Typography
-          variant="caption"
-          sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', minWidth: 12 }}
-        >
-          {count}
-        </Typography>
-      </Stack>
+      <MotionButtonBase
+        {...press}
+        disabled={locked || !onVote}
+        aria-pressed={active}
+        aria-label={direction === 1 ? ka.vote.up : ka.vote.down}
+        onClick={() => onVote?.(active ? null : direction)}
+        sx={{
+          height: 44,
+          px: '13px',
+          gap: '6px',
+          borderRadius: 999,
+          border: '1px solid',
+          borderColor: active
+            ? direction === 1
+              ? 'rgba(255,178,36,0.44)'
+              : 'rgba(110,134,171,0.44)'
+            : 'divider',
+          bgcolor: active
+            ? direction === 1
+              ? 'signal.upSoft'
+              : 'signal.downSoft'
+            : 'transparent',
+          color: active ? tint : 'text.secondary',
+          fontSize: 12.5,
+          fontWeight: 700,
+          fontVariantNumeric: 'tabular-nums',
+          transition: 'background-color .14s linear',
+          '&.Mui-disabled': { opacity: 0.4 },
+        }}
+      >
+        {direction === 1 ? '▲' : '▼'} {count}
+      </MotionButtonBase>
     );
   };
 
   return (
     <Paper
       sx={{
-        borderRadius: 3,
-        p: 2,
+        borderRadius: 4,
+        p: 1.75,
         display: 'flex',
         flexDirection: 'column',
-        gap: 1.5,
+        gap: 1.4,
         height: '100%',
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="center">
-        <Avatar
-          {...avatarProps(post.author_id, nickname, avatarUrl(author?.avatar_url ?? null))}
-          sx={{
-            ...avatarProps(post.author_id, nickname, avatarUrl(author?.avatar_url ?? null)).sx,
-            width: 28,
-            height: 28,
-            fontSize: '0.75rem',
-          }}
-        />
+      <Stack direction="row" spacing={1.25} alignItems="center">
+        <Avatar {...ava} sx={{ ...ava.sx, width: 30, height: 30, fontSize: '0.75rem' }} />
         <Typography
           component={RouterLink}
           to={`/members/${post.author_id}`}
-          variant="body2"
           noWrap
-          sx={{ fontWeight: 600, color: 'text.primary', textDecoration: 'none', flexGrow: 1 }}
+          sx={{
+            flexGrow: 1,
+            fontSize: 13.5,
+            fontWeight: 600,
+            color: 'text.primary',
+            textDecoration: 'none',
+          }}
         >
           {nickname}
         </Typography>
@@ -107,18 +121,22 @@ export function PostCard({
           {formatShort(post.created_at)}
         </Typography>
         {onAdminDelete && (
-          <IconButton size="small" onClick={onAdminDelete} aria-label="წაშლა">
+          <IconButton size="small" onClick={onAdminDelete} aria-label={ka.common.delete}>
             <DeleteIcon fontSize="small" />
           </IconButton>
         )}
       </Stack>
 
-      <Typography variant="body1" sx={{ flexGrow: 1, whiteSpace: 'pre-wrap' }}>
+      <Typography
+        sx={{ flexGrow: 1, fontSize: 14.5, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}
+      >
         {post.body}
       </Typography>
 
+      <Box sx={{ height: '1px', bgcolor: 'surface2' }} />
+
       <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-        <Stack direction="row" spacing={0.5} alignItems="center">
+        <Stack direction="row" spacing={1}>
           {voteButton(1, post.up)}
           {voteButton(-1, post.down)}
         </Stack>

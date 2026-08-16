@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -35,6 +36,7 @@ export function PostComposer({
   submitting,
   onSubmit,
 }: PostComposerProps) {
+  const [open, setOpen] = useState(false);
   const [body, setBody] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -50,9 +52,41 @@ export function PostComposer({
     );
   }
 
+  // Collapsed: a dashed slot that states the irreversible part before you have
+  // typed anything, rather than a textarea that looks like a draft box.
+  if (!open) {
+    return (
+      <Box
+        sx={{
+          border: '1px dashed',
+          borderColor: 'divider',
+          borderRadius: '14px',
+          p: 1.75,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          bgcolor: (t) => (t.palette.mode === 'dark' ? '#1A1514' : t.palette.surface2),
+        }}
+      >
+        <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1, textWrap: 'pretty' }}>
+          {ka.posts.prompt}
+        </Typography>
+        <Button
+          variant="contained"
+          size="small"
+          disabled={disabled}
+          onClick={() => setOpen(true)}
+          sx={{ flex: 'none', boxShadow: '0 6px 20px rgba(247,55,24,0.28)' }}
+        >
+          {ka.posts.write}
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <>
-      <Paper sx={{ borderRadius: 3, p: 2 }}>
+      <Paper sx={{ borderRadius: '14px', p: 2 }}>
         <Stack spacing={1.5}>
           <TextField
             multiline
@@ -60,6 +94,7 @@ export function PostComposer({
             maxRows={5}
             fullWidth
             value={body}
+            autoFocus
             disabled={disabled || submitting}
             placeholder={ka.posts.compose}
             onChange={(event) => setBody(event.target.value.slice(0, MAX + 20))}
@@ -73,14 +108,26 @@ export function PostComposer({
             >
               {ka.posts.limit(remaining)}
             </Typography>
-            <Button
-              variant="contained"
-              size="small"
-              disabled={!canSubmit}
-              onClick={() => setConfirmOpen(true)}
-            >
-              {ka.posts.confirm}
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                color="inherit"
+                onClick={() => {
+                  setOpen(false);
+                  setBody('');
+                }}
+              >
+                {ka.posts.cancel}
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                disabled={!canSubmit}
+                onClick={() => setConfirmOpen(true)}
+              >
+                {ka.posts.confirm}
+              </Button>
+            </Stack>
           </Stack>
         </Stack>
       </Paper>
@@ -104,6 +151,7 @@ export function PostComposer({
               await onSubmit(trimmed);
               setConfirmOpen(false);
               setBody('');
+              setOpen(false);
             }}
           >
             {ka.posts.confirm}

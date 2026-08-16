@@ -18,3 +18,14 @@ body {
 body {
   overflow-x: hidden;
 }
+
+/* The "open week" dot in the header — the app's only ambient animation. */
+@keyframes emberPulse {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}

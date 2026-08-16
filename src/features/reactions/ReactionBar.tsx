@@ -16,17 +16,30 @@ interface ReactionBarProps {
 /**
  * 🔥 😂 💀 👑 😭 — one of each per member per target, toggleable, counts only.
  *
- * Only emoji that somebody has actually used are shown inline; the rest live
- * behind the add button. On a 390px screen with twenty rows, five always-on
- * chips per row would eat the layout.
+ * Only emoji somebody has actually used are shown; the rest live behind the add
+ * button. The visual pill is 30–32px because five of them plus the add button
+ * have to fit inside 390px, but each one carries an invisible padded hit area
+ * that brings the real tap target to 44px (rule 5).
  */
 export function ReactionBar({ counts, mine, disabled, size = 'md', onToggle }: ReactionBarProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const reduced = useReducedMotion();
 
   const used = REACTIONS.filter((emoji) => (counts?.[emoji] ?? 0) > 0);
-  const chipHeight = size === 'sm' ? 26 : 30;
-  const fontSize = size === 'sm' ? 12 : 13;
+  const height = size === 'sm' ? 30 : 32;
+  const fontSize = size === 'sm' ? 11.5 : 12;
+
+  /** Grows the touch target to 44px without moving a single pixel of paint. */
+  const hitArea = {
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: `${(height - 44) / 2}px`,
+      height: 44,
+    },
+  } as const;
 
   const chip = (emoji: string, count: number, active: boolean) => (
     <ButtonBase
@@ -38,28 +51,29 @@ export function ReactionBar({ counts, mine, disabled, size = 'md', onToggle }: R
       component={motion.button}
       {...(reduced ? {} : { whileTap: { scale: 0.9 } })}
       sx={{
-        height: chipHeight,
-        px: 0.9,
-        gap: 0.4,
+        position: 'relative',
+        height,
+        px: '10px',
+        gap: '5px',
         display: 'inline-flex',
         alignItems: 'center',
-        borderRadius: 99,
+        borderRadius: 999,
         border: '1px solid',
-        borderColor: active ? 'primary.main' : 'divider',
-        bgcolor: active ? 'rgba(247,55,24,0.12)' : 'transparent',
+        borderColor: active ? 'rgba(247,55,24,0.42)' : 'transparent',
+        bgcolor: active ? 'rgba(247,55,24,0.14)' : 'surface2',
         fontSize,
+        fontWeight: 600,
         lineHeight: 1,
-        color: 'text.secondary',
+        color: active ? 'primary.light' : 'text.secondary',
+        transition: 'background-color .14s linear',
         '&.Mui-disabled': { opacity: 0.4 },
+        ...hitArea,
       }}
     >
       <Box component="span" sx={{ fontSize: fontSize + 2 }}>
         {emoji}
       </Box>
-      <Box
-        component="span"
-        sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'text.primary' }}
-      >
+      <Box component="span" sx={{ fontVariantNumeric: 'tabular-nums' }}>
         {count}
       </Box>
     </ButtonBase>
@@ -67,7 +81,7 @@ export function ReactionBar({ counts, mine, disabled, size = 'md', onToggle }: R
 
   return (
     <>
-      <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
+      <Stack direction="row" spacing="6px" alignItems="center" flexWrap="wrap" useFlexGap>
         {used.map((emoji) => chip(emoji, counts?.[emoji] ?? 0, mine.has(emoji)))}
 
         {!disabled && (
@@ -75,12 +89,14 @@ export function ReactionBar({ counts, mine, disabled, size = 'md', onToggle }: R
             onClick={(event) => setAnchor(event.currentTarget)}
             aria-label="რეაქციის დამატება"
             sx={{
-              height: chipHeight,
-              width: chipHeight + 4,
-              borderRadius: 99,
+              position: 'relative',
+              height,
+              width: height + 6,
+              borderRadius: 999,
               border: '1px dashed',
               borderColor: 'divider',
               color: 'text.secondary',
+              ...hitArea,
             }}
           >
             <AddReactionIcon sx={{ fontSize: fontSize + 4 }} />
@@ -94,7 +110,7 @@ export function ReactionBar({ counts, mine, disabled, size = 'md', onToggle }: R
         onClose={() => setAnchor(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        slotProps={{ paper: { sx: { borderRadius: 99, p: 0.5 } } }}
+        slotProps={{ paper: { sx: { borderRadius: 999, p: 0.5 } } }}
       >
         <Stack direction="row" spacing={0.25}>
           {REACTIONS.map((emoji) => (
@@ -108,7 +124,7 @@ export function ReactionBar({ counts, mine, disabled, size = 'md', onToggle }: R
               sx={{
                 width: 44,
                 height: 44,
-                borderRadius: 99,
+                borderRadius: 999,
                 fontSize: 22,
                 bgcolor: mine.has(emoji) ? 'rgba(247,55,24,0.12)' : 'transparent',
               }}

@@ -18,7 +18,8 @@ export default defineConfig({
       output: {
         manualChunks: {
           mui: ['@mui/material', '@mui/icons-material'],
-          charts: ['@mui/x-charts'],
+          // No `charts` entry: the rank history is hand-drawn bars now, so
+          // naming @mui/x-charts here only forced a dead chunk into dist.
           pickers: ['@mui/x-date-pickers'],
           supabase: ['@supabase/supabase-js'],
         },

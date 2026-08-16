@@ -11,12 +11,16 @@ declare module '@mui/material/styles' {
       gold: string;
     };
     surface2: string;
+    /** Row separators inside a list — quieter than `divider`, which draws cards. */
     hairline: string;
+    /** Third-tier text: rank numerals below the podium, micro-labels. */
+    textMute: string;
   }
   interface PaletteOptions {
     signal?: Palette['signal'];
     surface2?: string;
     hairline?: string;
+    textMute?: string;
   }
   interface TypographyVariants {
     display: React.CSSProperties;
@@ -50,7 +54,8 @@ export function buildTheme(mode: ColorMode): Theme {
       text: { primary: c.text, secondary: c.textDim },
       divider: c.border,
       surface2: c.surface2,
-      hairline: c.border,
+      hairline: c.hairline,
+      textMute: c.textMute,
       signal,
       error: { main: ember[400] },
       success: { main: signal.up },

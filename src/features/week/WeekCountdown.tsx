@@ -10,27 +10,30 @@ interface WeekCountdownProps {
   onExpire?: () => void;
 }
 
-function Segment({ value, label }: { value: number; label: string }) {
+function Segment({ value, label, dim }: { value: number; label: string; dim?: boolean }) {
   return (
-    <Stack alignItems="center" spacing={0.25} sx={{ minWidth: 46 }}>
+    <Stack alignItems="center" spacing="3px" sx={{ minWidth: 44 }}>
       <Typography
         variant="numeral"
-        sx={{ fontSize: 30, lineHeight: 1, color: 'text.primary' }}
+        sx={{ fontSize: 32, letterSpacing: '-0.04em', color: dim ? 'textMute' : 'text.primary' }}
         aria-hidden
       >
         {String(value).padStart(2, '0')}
       </Typography>
-      <Typography variant="caption" color="text.secondary">
-        {label}
-      </Typography>
+      <Typography sx={{ fontSize: 11, fontWeight: 500, color: 'textMute' }}>{label}</Typography>
     </Stack>
   );
 }
 
 /**
- * Segmented digits, always visible on the landing page (§1.1). Under an hour
- * it picks up a slow pulse — the only motion on the scoreboard that runs
- * without user input, and it stops entirely under reduced motion (§9.5).
+ * All four segments, always (§1.1). The old version dropped days at zero and
+ * seconds above a day, so the block changed width twice a week and the layout
+ * jumped with it. Seconds now sit in the muted tone instead — present, ticking,
+ * clearly the least important number of the four.
+ *
+ * Under an hour the whole block picks up a slow pulse: the only motion on the
+ * board that runs without user input, and it stops entirely under reduced
+ * motion (§9.5).
  */
 export function WeekCountdown({ endsAt, onExpire }: WeekCountdownProps) {
   const reduced = useReducedMotion();
@@ -60,14 +63,14 @@ export function WeekCountdown({ endsAt, onExpire }: WeekCountdownProps) {
   const digits = (
     <Stack
       direction="row"
-      spacing={1}
+      spacing="14px"
       alignItems="flex-end"
       aria-label={`${ka.week.endsIn}: ${countdown.days} ${ka.week.days}, ${countdown.hours} ${ka.week.hours}, ${countdown.minutes} ${ka.week.minutes}`}
     >
-      {countdown.days > 0 && <Segment value={countdown.days} label={ka.week.days} />}
+      <Segment value={countdown.days} label={ka.week.days} />
       <Segment value={countdown.hours} label={ka.week.hours} />
       <Segment value={countdown.minutes} label={ka.week.minutes} />
-      {countdown.days === 0 && <Segment value={countdown.seconds} label={ka.week.seconds} />}
+      <Segment value={countdown.seconds} label={ka.week.seconds} dim />
     </Stack>
   );
 

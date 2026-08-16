@@ -57,7 +57,7 @@ export function WeekPage() {
   return (
     <PageTransition>
       <Stack spacing={3} sx={{ pt: 2 }}>
-        <Paper sx={{ mx: 2, borderRadius: 3, p: 2.5 }}>
+        <Paper sx={{ mx: 2, borderRadius: 4, p: 2.5 }}>
           <Stack spacing={1}>
             <Stack direction="row" alignItems="center" spacing={1}>
               <Typography variant="h1">{ka.week.number(week.id)}</Typography>
@@ -74,16 +74,18 @@ export function WeekPage() {
           </Stack>
         </Paper>
 
-        <Box sx={{ px: 2 }}>
-          <Typography variant="h2" sx={{ mb: 1 }}>
+        <Box>
+          <Typography variant="h2" sx={{ px: 2, mb: 1 }}>
             {ka.standings.title}
           </Typography>
 
           {isOpen ? (
-            <Alert severity="info" sx={{ borderRadius: 3 }}>
+            <Alert severity="info" sx={{ mx: 2, borderRadius: 3 }}>
               {ka.week.current}
             </Alert>
           ) : (
+            /* Full-bleed, exactly like the live board — a closed week should
+               look like the same board, frozen, not like a different screen. */
             <StandingsList rows={rows} loading={standings.isPending} />
           )}
         </Box>

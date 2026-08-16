@@ -1,41 +1,75 @@
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Alert, Box, Button, Divider, Paper, Stack, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Alert, Box, Stack, Typography } from '@mui/material';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useToast } from '@/app/providers/ToastProvider';
 import { PageTransition } from '@/components/PageTransition';
 import { Splash } from '@/components/Splash';
-import { WeekCountdown } from '@/features/week/WeekCountdown';
-import { TurnoutBar } from '@/features/week/TurnoutBar';
+import { WeekCard } from '@/features/week/WeekCard';
 import { useAnnouncements, useOpenWeek, useTurnout, weekKeys } from '@/features/week/api';
 import { StandingsList } from '@/features/standings/StandingsList';
+import { ScopeToggle } from '@/features/standings/ScopeToggle';
 import { useCastVote, useMyVotes, useRankedStandings } from '@/features/standings/api';
-import { PostScroller } from '@/features/posts/PostScroller';
-import { useMyPostVotes, useScoredPosts, useVotePost } from '@/features/posts/api';
-import { CommentThread } from '@/features/comments/CommentThread';
-import {
-  useComments,
-  useCreateComment,
-  useDeleteComment,
-  useUpdateComment,
-} from '@/features/comments/api';
+import { useRankedAllTime, type AllTimeSort } from '@/features/allTime/api';
+import { SortPicker } from '@/features/allTime/SortPicker';
+import { BadgeShelf } from '@/features/profile/BadgeShelf';
+import { useAllBadges } from '@/features/members/api';
 import {
   useMemberReactionCounts,
   useMyMemberReactions,
-  useMyPostReactions,
-  usePostReactionCounts,
   useToggleMemberReaction,
-  useTogglePostReaction,
 } from '@/features/reactions/api';
-import { useMemberMap } from '@/features/members/api';
 import { useRealtime } from '@/features/realtime/useRealtime';
-import { formatDay } from '@/lib/time';
 import { ka } from '@/i18n/ka';
+import type { AllTimeRow } from '@/features/allTime/api';
 
+type Scope = 'week' | 'allTime';
+
+const SCOPES = [
+  { value: 'week' as const, label: ka.week.label },
+  { value: 'allTime' as const, label: ka.nav.allTime },
+];
+
+/** The extra numbers an all-time row reveals when you open it. */
+function AllTimeDetail({ row }: { row: AllTimeRow }) {
+  const stat = (value: string | number, label: string) => (
+    <Stack direction="row" spacing={0.75} alignItems="baseline">
+      <Box
+        component="span"
+        sx={{ fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+      >
+        {value}
+      </Box>
+      <Typography variant="caption" color="text.secondary">
+        {label}
+      </Typography>
+    </Stack>
+  );
+
+  return (
+    <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+      {stat(row.avg_net.toFixed(1), ka.allTime.avgNet)}
+      {stat(row.weeks_at_one, ka.profile.weeksAtOne)}
+      {stat(row.weeks_played, ka.profile.weeksPlayed)}
+    </Stack>
+  );
+}
+
+/**
+ * The board (§1.1–1.3) and nothing else.
+ *
+ * Posts and their comment thread used to be stacked underneath, which meant the
+ * screen you open twenty times a day scrolled past the scoreboard into two
+ * other features. They live on the posts tab now; this page is the week, the
+ * ranking, and the way in to either scope.
+ */
 export function HomePage() {
   const { member } = useAuth();
   const { toastError } = useToast();
   const queryClient = useQueryClient();
+
+  const [scope, setScope] = useState<Scope>('week');
+  const [sort, setSort] = useState<AllTimeSort>('total_net');
 
   const weekQuery = useOpenWeek();
   const week = weekQuery.data;
@@ -46,7 +80,6 @@ export function HomePage() {
   const { rows, isPending } = useRankedStandings(weekId);
   const myVotes = useMyVotes(weekId);
   const turnout = useTurnout(weekId);
-  const { map: members } = useMemberMap();
   const announcements = useAnnouncements();
 
   const castVote = useCastVote(weekId);
@@ -54,17 +87,8 @@ export function HomePage() {
   const myMemberReactions = useMyMemberReactions(weekId);
   const toggleMemberReaction = useToggleMemberReaction(weekId);
 
-  const posts = useScoredPosts(weekId);
-  const myPostVotes = useMyPostVotes();
-  const votePost = useVotePost(weekId);
-  const postReactions = usePostReactionCounts(weekId);
-  const myPostReactions = useMyPostReactions();
-  const togglePostReaction = useTogglePostReaction(weekId);
-
-  const comments = useComments(weekId);
-  const createComment = useCreateComment(weekId);
-  const updateComment = useUpdateComment(weekId);
-  const deleteComment = useDeleteComment(weekId);
+  const allTime = useRankedAllTime(sort);
+  const badges = useAllBadges();
 
   if (weekQuery.isPending) return <Splash />;
 
@@ -79,129 +103,93 @@ export function HomePage() {
   }
 
   const votingDisabled = week.is_paused;
+  const isAllTime = scope === 'allTime';
 
   return (
     <PageTransition>
-      <Stack spacing={3} sx={{ pt: 2 }}>
-        {announcements.data?.map((announcement) => (
-          <Alert key={announcement.id} severity="info" sx={{ mx: 2, borderRadius: 3 }}>
-            {announcement.body}
-          </Alert>
-        ))}
+      <Stack sx={{ pt: 1.75 }}>
+        <Stack spacing={2} sx={{ px: 2 }}>
+          {announcements.data?.map((announcement) => (
+            <Alert key={announcement.id} severity="info" sx={{ borderRadius: 3 }}>
+              {announcement.body}
+            </Alert>
+          ))}
 
-        {/* ---- the week header: countdown + turnout ---- */}
-        <Paper sx={{ mx: 2, borderRadius: 3, p: 2.5 }}>
-          <Stack spacing={2}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Stack spacing={0.25}>
-                <Typography variant="caption" color="text.secondary">
-                  {ka.week.current}
-                </Typography>
-                <Typography variant="h3">
-                  {ka.week.range(formatDay(week.starts_at), formatDay(week.ends_at))}
-                </Typography>
-              </Stack>
-              <Typography variant="caption" color="text.secondary" sx={{ pt: 0.5 }}>
-                {ka.week.endsIn}
-              </Typography>
-            </Stack>
+          <WeekCard
+            week={week}
+            voters={turnout.data?.voters ?? 0}
+            total={turnout.data?.total_members ?? 0}
+            onExpire={() => {
+              // The cron job closes the week server-side; refetch so the new
+              // one appears without a manual reload.
+              queryClient.invalidateQueries({ queryKey: weekKeys.open });
+            }}
+          />
 
-            <WeekCountdown
-              endsAt={week.ends_at}
-              onExpire={() => {
-                // The cron job closes the week server-side; refetch so the new
-                // one appears without a manual reload.
-                queryClient.invalidateQueries({ queryKey: weekKeys.open });
-              }}
-            />
+          <ScopeToggle
+            value={scope}
+            segments={SCOPES}
+            ariaLabel={ka.standings.title}
+            onChange={setScope}
+          />
 
-            {votingDisabled && (
-              <Alert severity="warning" variant="outlined" sx={{ borderRadius: 2 }}>
-                {ka.week.paused}
-              </Alert>
-            )}
-
-            <TurnoutBar
-              voters={turnout.data?.voters ?? 0}
-              total={turnout.data?.total_members ?? 0}
-            />
-          </Stack>
-        </Paper>
-
-        {/* ---- the scoreboard ---- */}
-        <Box sx={{ px: 2 }}>
-          <Stack direction="row" alignItems="baseline" justifyContent="space-between" sx={{ mb: 1 }}>
-            <Typography variant="h2">{ka.standings.title}</Typography>
-            <Typography variant="caption" color="text.secondary">
-              {ka.vote.secret}
+          <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1}>
+            <Typography variant="h2">
+              {isAllTime ? ka.allTime.title : ka.standings.title}
             </Typography>
+            {isAllTime ? (
+              <SortPicker value={sort} onChange={setSort} />
+            ) : (
+              <Typography variant="caption" color="text.secondary">
+                {ka.standings.hint}
+              </Typography>
+            )}
           </Stack>
-
-          <StandingsList
-            rows={rows}
-            loading={isPending}
-            myId={member?.id}
-            myVotes={myVotes.data}
-            votingDisabled={votingDisabled}
-            reactionCounts={memberReactions.counts}
-            myReactions={myMemberReactions.mine}
-            onVote={(memberId, value) =>
-              castVote.mutate({ targetId: memberId, value }, { onError: toastError })
-            }
-            onReact={(memberId, emoji) =>
-              toggleMemberReaction.mutate({ memberId, emoji }, { onError: toastError })
-            }
-          />
-        </Box>
-
-        <Divider sx={{ mx: 2 }} />
-
-        {/* ---- this week's posts ---- */}
-        <Stack spacing={1}>
-          <Stack
-            direction="row"
-            alignItems="baseline"
-            justifyContent="space-between"
-            sx={{ px: 2 }}
-          >
-            <Typography variant="h2">{ka.posts.title}</Typography>
-            <Button component={RouterLink} to="/posts" size="small">
-              {ka.nav.posts}
-            </Button>
-          </Stack>
-
-          <PostScroller
-            posts={posts.rows}
-            members={members}
-            myVotes={myPostVotes.data ?? {}}
-            locked={votingDisabled}
-            reactionCounts={postReactions.counts}
-            myReactions={myPostReactions.mine}
-            onVote={(postId, value) =>
-              votePost.mutate({ postId, value }, { onError: toastError })
-            }
-            onReact={(postId, emoji) =>
-              togglePostReaction.mutate({ postId, emoji }, { onError: toastError })
-            }
-          />
         </Stack>
 
-        {/* ---- the week's one comment thread ---- */}
-        <Stack spacing={1} sx={{ px: 2 }}>
-          <Typography variant="h2">{ka.comments.title}</Typography>
-          {member && (
-            <CommentThread
-              comments={comments.data ?? []}
-              members={members}
-              myId={member.id}
-              isAdmin={member.isAdmin}
-              locked={votingDisabled}
-              onCreate={(body) => createComment.mutate(body, { onError: toastError })}
-              onEdit={(id, body) => updateComment.mutate({ id, body }, { onError: toastError })}
-              onDelete={(id) => deleteComment.mutate(id, { onError: toastError })}
+        <Box sx={{ mt: 1 }}>
+          {isAllTime ? (
+            // `played` is false while the query is still in flight, so the
+            // pending check has to come first or the empty state flashes.
+            allTime.isPending || allTime.played ? (
+              <StandingsList
+                rows={allTime.rows}
+                loading={allTime.isPending}
+                myId={member?.id}
+                allTime
+                detailFor={(row) => <AllTimeDetail row={row as AllTimeRow} />}
+              />
+            ) : (
+              <Box sx={{ px: 2 }}>
+                <Alert severity="info" sx={{ borderRadius: 3 }}>
+                  {ka.allTime.empty}
+                </Alert>
+              </Box>
+            )
+          ) : (
+            <StandingsList
+              rows={rows}
+              loading={isPending}
+              myId={member?.id}
+              myVotes={myVotes.data}
+              votingDisabled={votingDisabled}
+              reactionCounts={memberReactions.counts}
+              myReactions={myMemberReactions.mine}
+              onVote={(memberId, value) =>
+                castVote.mutate({ targetId: memberId, value }, { onError: toastError })
+              }
+              onReact={(memberId, emoji) =>
+                toggleMemberReaction.mutate({ memberId, emoji }, { onError: toastError })
+              }
             />
           )}
-        </Stack>
+        </Box>
+
+        {isAllTime && allTime.played && (
+          <Box sx={{ px: 2, pt: 3 }}>
+            <BadgeShelf badges={badges.data ?? []} title={ka.allTime.badgeWall} />
+          </Box>
+        )}
       </Stack>
     </PageTransition>
   );

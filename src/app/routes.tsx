@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import { RequireAdmin, RequireAuth } from './guards';
 
@@ -6,7 +6,6 @@ import { HomePage } from '@/pages/HomePage';
 import { PostsPage } from '@/pages/PostsPage';
 import { ArchivePage } from '@/pages/ArchivePage';
 import { WeekPage } from '@/pages/WeekPage';
-import { AllTimePage } from '@/pages/AllTimePage';
 import { MemberPage } from '@/pages/MemberPage';
 import { MePage } from '@/pages/MePage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -42,7 +41,8 @@ export function AppRoutes() {
         <Route path="posts" element={<PostsPage />} />
         <Route path="weeks" element={<ArchivePage />} />
         <Route path="weeks/:id" element={<WeekPage />} />
-        <Route path="all-time" element={<AllTimePage />} />
+        {/* All-time is a scope on the board now, not a page. Old links still land. */}
+        <Route path="all-time" element={<Navigate to="/" replace />} />
         <Route path="members/:id" element={<MemberPage />} />
         <Route path="me" element={<MePage />} />
 

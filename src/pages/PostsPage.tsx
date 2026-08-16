@@ -1,4 +1,4 @@
-import { Alert, Box, Stack, Typography } from '@mui/material';
+import { Alert, Box, Divider, Stack, Typography } from '@mui/material';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useToast } from '@/app/providers/ToastProvider';
 import { PageTransition } from '@/components/PageTransition';
@@ -7,6 +7,13 @@ import { useOpenWeek } from '@/features/week/api';
 import { useMemberMap } from '@/features/members/api';
 import { PostCard } from '@/features/posts/PostCard';
 import { PostComposer } from '@/features/posts/PostComposer';
+import { CommentThread } from '@/features/comments/CommentThread';
+import {
+  useComments,
+  useCreateComment,
+  useDeleteComment,
+  useUpdateComment,
+} from '@/features/comments/api';
 import {
   useCreatePost,
   useMyPostVotes,
@@ -22,6 +29,14 @@ import {
 import { useRealtime } from '@/features/realtime/useRealtime';
 import { ka } from '@/i18n/ka';
 
+/**
+ * Everything the group says out loud this week: the one post each, and the one
+ * comment thread.
+ *
+ * The thread used to hang off the bottom of the board. It belongs here — the
+ * board is scores, this tab is words, and the thread had no other home once the
+ * board became scores only.
+ */
 export function PostsPage() {
   const { member } = useAuth();
   const { toastError } = useToast();
@@ -41,6 +56,11 @@ export function PostsPage() {
   const myReactions = useMyPostReactions();
   const toggleReaction = useTogglePostReaction(weekId);
 
+  const comments = useComments(weekId);
+  const createComment = useCreateComment(weekId);
+  const updateComment = useUpdateComment(weekId);
+  const deleteComment = useDeleteComment(weekId);
+
   if (weekQuery.isPending) return <Splash />;
   if (!week) {
     return (
@@ -57,7 +77,12 @@ export function PostsPage() {
   return (
     <PageTransition>
       <Stack spacing={2} sx={{ p: 2 }}>
-        <Typography variant="h1">{ka.posts.title}</Typography>
+        <Stack direction="row" alignItems="baseline" justifyContent="space-between">
+          <Typography variant="h2">{ka.posts.title}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {ka.posts.oncePerWeek}
+          </Typography>
+        </Stack>
 
         <PostComposer
           alreadyPosted={alreadyPosted}
@@ -88,6 +113,22 @@ export function PostsPage() {
               />
             ))}
           </Stack>
+        )}
+
+        <Divider sx={{ pt: 1 }} />
+
+        <Typography variant="h2">{ka.comments.title}</Typography>
+        {member && (
+          <CommentThread
+            comments={comments.data ?? []}
+            members={members}
+            myId={member.id}
+            isAdmin={member.isAdmin}
+            locked={week.is_paused}
+            onCreate={(body) => createComment.mutate(body, { onError: toastError })}
+            onEdit={(id, body) => updateComment.mutate({ id, body }, { onError: toastError })}
+            onDelete={(id) => deleteComment.mutate(id, { onError: toastError })}
+          />
         )}
       </Stack>
     </PageTransition>

@@ -8,7 +8,14 @@ export const weekKeys = {
   one: (id: number) => ['week', id] as const,
   turnout: (weekId: number | undefined) => ['turnout', weekId] as const,
   announcements: ['announcements'] as const,
+  podiums: ['podiums'] as const,
 };
+
+export interface PodiumEntry {
+  member_id: string;
+  rank: number;
+  net: number;
+}
 
 /** The single open week. Everything on the landing page hangs off this. */
 export function useOpenWeek() {
@@ -69,6 +76,38 @@ export function useTurnout(weekId: number | undefined) {
         .maybeSingle();
       if (error) throw error;
       return data ?? { week_id: weekId!, voters: 0, total_members: 0 };
+    },
+  });
+}
+
+/**
+ * The top three of every closed week, in one query, keyed by week.
+ *
+ * The archive index used to be a list of dates you had to open to learn
+ * anything. A week is remembered by who won it, so the podium comes to the
+ * index instead. Read from `weekly_results`, which is the frozen snapshot
+ * (rule 3) — never recomputed from votes.
+ */
+export function usePodiums() {
+  return useQuery({
+    queryKey: weekKeys.podiums,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<Map<number, PodiumEntry[]>> => {
+      const { data, error } = await supabase
+        .from('weekly_results')
+        .select('week_id, member_id, rank, net')
+        .lte('rank', 3)
+        .order('week_id', { ascending: false })
+        .order('rank', { ascending: true });
+      if (error) throw error;
+
+      const byWeek = new Map<number, PodiumEntry[]>();
+      for (const row of data ?? []) {
+        const bucket = byWeek.get(row.week_id) ?? [];
+        bucket.push({ member_id: row.member_id, rank: row.rank, net: row.net });
+        byWeek.set(row.week_id, bucket);
+      }
+      return byWeek;
     },
   });
 }

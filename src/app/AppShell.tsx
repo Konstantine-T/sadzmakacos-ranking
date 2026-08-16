@@ -1,135 +1,142 @@
-import { useMemo } from 'react';
-import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useMemo } from "react";
+import {
+  Link as RouterLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import {
   AppBar,
-  Avatar,
-  Badge,
-  BottomNavigation,
-  BottomNavigationAction,
   Box,
+  ButtonBase,
   Container,
-  IconButton,
-  Paper,
   Toolbar,
-  Tooltip,
   Typography,
-} from '@mui/material';
-import LeaderboardIcon from '@mui/icons-material/EmojiEventsOutlined';
-import RankIcon from '@mui/icons-material/BarChartRounded';
-import PostsIcon from '@mui/icons-material/ChatBubbleOutlineRounded';
-import ArchiveIcon from '@mui/icons-material/HistoryRounded';
-import ProfileIcon from '@mui/icons-material/PersonOutlineRounded';
-import DarkIcon from '@mui/icons-material/DarkModeOutlined';
-import LightIcon from '@mui/icons-material/LightModeOutlined';
-import ShieldIcon from '@mui/icons-material/ShieldOutlined';
-import { ka } from '@/i18n/ka';
-import { useAuth } from './providers/AuthProvider';
-import { useColorMode } from './providers/ColorModeProvider';
-import { avatarProps } from '@/lib/avatar';
-import { avatarUrl } from '@/lib/supabase';
+} from "@mui/material";
+import { ka } from "@/i18n/ka";
+import { useOpenWeek } from "@/features/week/api";
 
 const NAV = [
-  { to: '/', label: ka.nav.ranking, icon: <RankIcon /> },
-  { to: '/posts', label: ka.nav.posts, icon: <PostsIcon /> },
-  { to: '/weeks', label: ka.nav.archive, icon: <ArchiveIcon /> },
-  { to: '/me', label: ka.nav.profile, icon: <ProfileIcon /> },
+  { to: "/", label: ka.nav.ranking },
+  { to: "/posts", label: ka.nav.posts },
+  { to: "/weeks", label: ka.nav.archive },
+  { to: "/me", label: ka.nav.profile },
 ];
 
-const BOTTOM_NAV_HEIGHT = 64;
+const BOTTOM_NAV_HEIGHT = 66;
+
+/** Routes that are a level down from a tab, and so earn a back button. */
+function isDetailRoute(path: string) {
+  return /^\/(members|weeks)\/[^/]+/.test(path);
+}
 
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { member } = useAuth();
-  const { mode, toggle } = useColorMode();
+  const week = useOpenWeek();
 
   const activeIndex = useMemo(() => {
     const path = location.pathname;
-    if (path === '/') return 0;
-    if (path.startsWith('/posts')) return 1;
-    if (path.startsWith('/weeks')) return 2;
-    if (path.startsWith('/me') || path.startsWith('/members')) return 3;
+    if (path === "/") return 0;
+    if (path.startsWith("/posts")) return 1;
+    if (path.startsWith("/weeks")) return 2;
+    if (path.startsWith("/me") || path.startsWith("/members")) return 3;
     return -1;
   }, [location.pathname]);
 
+  const detail = isDetailRoute(location.pathname);
+  const live =
+    !detail &&
+    week.data !== null &&
+    week.data !== undefined &&
+    !week.data.is_paused;
+
   return (
-    <Box sx={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       <AppBar
         position="sticky"
         color="transparent"
         elevation={0}
         sx={{
-          backdropFilter: 'blur(14px)',
+          backdropFilter: "blur(16px)",
           backgroundColor: (t) =>
-            t.palette.mode === 'dark' ? 'rgba(20,16,15,0.82)' : 'rgba(251,247,246,0.86)',
-          borderBottom: (t) => `1px solid ${t.palette.divider}`,
+            t.palette.mode === "dark"
+              ? "rgba(20,16,15,0.86)"
+              : "rgba(251,247,246,0.88)",
+          borderBottom: (t) => `1px solid ${t.palette.hairline}`,
         }}
       >
         <Container maxWidth="sm" disableGutters>
-          <Toolbar sx={{ gap: 0.5, minHeight: 56, px: 2 }}>
+          <Toolbar sx={{ gap: 1.25, minHeight: 56, px: 2 }}>
             <Typography
               component={RouterLink}
               to="/"
               variant="h3"
               sx={{
                 flexGrow: 1,
-                textDecoration: 'none',
-                color: 'text.primary',
+                textDecoration: "none",
+                color: "text.primary",
                 fontFamily: (t) => t.typography.h1.fontFamily,
-                letterSpacing: '-0.01em',
+                letterSpacing: "-0.01em",
               }}
             >
               {ka.appName}
             </Typography>
 
-            <Tooltip title={ka.allTime.title}>
-              <IconButton
-                onClick={() => navigate('/all-time')}
-                aria-label={ka.allTime.title}
-                size="small"
+            {detail && (
+              <ButtonBase
+                onClick={() => navigate(-1)}
+                sx={{
+                  height: 44,
+                  px: 1.75,
+                  borderRadius: 999,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  color: "text.secondary",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    color: "text.primary",
+                  },
+                }}
               >
-                <LeaderboardIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title={ka.common.theme}>
-              <IconButton onClick={toggle} aria-label={ka.common.theme} size="small">
-                {mode === 'dark' ? <LightIcon fontSize="small" /> : <DarkIcon fontSize="small" />}
-              </IconButton>
-            </Tooltip>
-
-            {member?.isAdmin && (
-              <Tooltip title={ka.nav.admin}>
-                <IconButton onClick={() => navigate('/admin')} aria-label={ka.nav.admin} size="small">
-                  <ShieldIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+                {ka.common.back}
+              </ButtonBase>
             )}
 
-            {member && (
-              <IconButton
-                onClick={() => navigate('/me')}
-                aria-label={ka.nav.profile}
-                sx={{ p: 0.5 }}
+            {/* The week is open and taking votes — the only status the header carries. */}
+            {live && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  height: 26,
+                  px: "10px",
+                  borderRadius: 999,
+                  bgcolor: "rgba(247,55,24,0.12)",
+                  border: "1px solid rgba(247,55,24,0.34)",
+                }}
               >
-                <Badge
-                  overlap="circular"
-                  variant="dot"
-                  color="primary"
-                  invisible={!member.isAdmin}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                <Box
+                  sx={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: 99,
+                    bgcolor: "primary.main",
+                    animation: "emberPulse 2s ease-in-out infinite",
+                    "@media (prefers-reduced-motion: reduce)": {
+                      animation: "none",
+                    },
+                  }}
+                />
+                {/* <Typography
+                  sx={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', color: 'primary.light' }}
                 >
-                  <Avatar
-                    {...avatarProps(member.id, member.nickname, avatarUrl(member.avatarUrl))}
-                    sx={{
-                      ...avatarProps(member.id, member.nickname, avatarUrl(member.avatarUrl)).sx,
-                      width: 32,
-                      height: 32,
-                      fontSize: '0.8rem',
-                    }}
-                  />
-                </Badge>
-              </IconButton>
+                  {ka.week.open}
+                </Typography> */}
+              </Box>
             )}
           </Toolbar>
         </Container>
@@ -147,41 +154,70 @@ export function AppShell() {
         <Outlet />
       </Container>
 
-      <Paper
-        square
+      {/*
+        Icons are gone. Four Georgian words are shorter to read than four
+        pictograms are to decode, and a 2px dash under the active one carries
+        the state without competing with the board's own colour language.
+      */}
+      <Box
+        component="nav"
         sx={{
-          position: 'fixed',
+          position: "fixed",
           bottom: 0,
           left: 0,
           right: 0,
           zIndex: (t) => t.zIndex.appBar,
-          borderLeft: 0,
-          borderRight: 0,
-          borderBottom: 0,
-          pb: 'env(safe-area-inset-bottom)',
+          pb: "env(safe-area-inset-bottom)",
           backgroundColor: (t) =>
-            t.palette.mode === 'dark' ? 'rgba(20,16,15,0.94)' : 'rgba(251,247,246,0.96)',
-          backdropFilter: 'blur(14px)',
+            t.palette.mode === "dark"
+              ? "rgba(20,16,15,0.93)"
+              : "rgba(251,247,246,0.96)",
+          backdropFilter: "blur(16px)",
+          borderTop: (t) => `1px solid ${t.palette.hairline}`,
         }}
       >
         <Container maxWidth="sm" disableGutters>
-          <BottomNavigation
-            value={activeIndex}
-            showLabels
-            sx={{ height: BOTTOM_NAV_HEIGHT, backgroundColor: 'transparent' }}
-            onChange={(_, index: number) => navigate(NAV[index].to)}
-          >
-            {NAV.map((item) => (
-              <BottomNavigationAction
-                key={item.to}
-                label={item.label}
-                icon={item.icon}
-                sx={{ '& .MuiBottomNavigationAction-label': { fontSize: 12, mt: 0.25 } }}
-              />
-            ))}
-          </BottomNavigation>
+          <Box sx={{ display: "flex", p: 1 }}>
+            {NAV.map((item, index) => {
+              const active = index === activeIndex;
+              return (
+                <ButtonBase
+                  key={item.to}
+                  onClick={() => navigate(item.to)}
+                  aria-current={active ? "page" : undefined}
+                  sx={{
+                    flex: 1,
+                    height: 50,
+                    flexDirection: "column",
+                    gap: "6px",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 2,
+                      borderRadius: 99,
+                      bgcolor: active ? "primary.main" : "transparent",
+                      transition: "background-color .16s linear",
+                    }}
+                  />
+                  <Typography
+                    sx={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: active ? "text.primary" : "textMute",
+                      transition: "color .16s linear",
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+                </ButtonBase>
+              );
+            })}
+          </Box>
         </Container>
-      </Paper>
+      </Box>
     </Box>
   );
 }
