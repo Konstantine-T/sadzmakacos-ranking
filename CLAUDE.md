@@ -38,16 +38,18 @@ Full spec: [sadzmakatsos-ranki-plan.md](sadzmakatsos-ranki-plan.md).
   no admin INSERT/UPDATE/DELETE policy anywhere on purpose.
 - **Column-level GRANTs, not RLS, keep members out of `is_admin`.** RLS cannot
   say "you may edit your nickname but not your admin flag"; grants can.
-- **Ranking is competition ranking on `(net, total_votes)`, `total_votes`
-  ASCENDING** — ties share a rank and the next rank skips (1, 1, 3, 4).
-  `nickname` breaks display order only, never the rank number. At a tied net a
-  clean sheet wins: `4/0` outranks `5/1`. Ascending `total_votes` *is* ascending
-  downvotes, since `total = net + 2·down` when `net` is fixed. The rule lives in
-  **three** places and they must agree — `src/lib/ranking.ts`,
-  `close_current_week()` and `admin_update_result()` (both redefined in
+- **Ranking is competition ranking on `net` ALONE.** The same score is the same
+  rank: everyone on +5 is #3, and the next rank skips past all of them —
+  1, 2, 3, 3, 3, 3, 7. Nothing but `net` can move the rank *number*.
+  `total_votes` and `nickname` order rows *inside* a shared rank and never
+  change it, cleanest sheet first, so `5/0` renders above `6/1` while both read
+  #3. Ascending `total_votes` *is* ascending downvotes, since
+  `total = net + 2·down` when `net` is fixed. The rule lives in **three** places
+  and they must agree — `src/lib/ranking.ts`, `close_current_week()` and
+  `admin_update_result()` (both redefined in
   `20260817000200_ranking_tiebreak.sql`). Change one, change all three.
-  Weeks closed before that migration keep their old ranks: closed weeks are
-  immutable (rule 3).
+  Closed weeks display via `sortFrozen()`, which reorders rows but never
+  recomputes the frozen rank (rule 3).
 - **`cast_vote` resolves the open week server-side.** Never send a client
   `week_id` for a write.
 

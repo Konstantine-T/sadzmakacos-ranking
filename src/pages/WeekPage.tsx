@@ -9,6 +9,7 @@ import { StandingsList } from '@/features/standings/StandingsList';
 import { StandingsTable } from '@/features/standings/StandingsTable';
 import { PostCard } from '@/features/posts/PostCard';
 import { useWideLayout } from '@/app/layout';
+import { sortFrozen } from '@/lib/ranking';
 import { useScoredPosts } from '@/features/posts/api';
 import { useMemberMap } from '@/features/members/api';
 import { usePostReactionCounts } from '@/features/reactions/api';
@@ -40,17 +41,21 @@ export function WeekPage() {
   const week = weekQuery.data;
   const isOpen = week.status === 'open';
 
-  const rows = (standings.data ?? []).map((row) => ({
-    member_id: row.member_id,
-    nickname: row.nickname,
-    avatar_url: row.avatar_url,
-    up: row.up,
-    down: row.down,
-    net: row.net,
-    total_votes: row.total_votes,
-    rank: row.rank,
-    movement: row.movement,
-  }));
+  // The frozen `rank` is authoritative (rule 3) — sortFrozen only decides the
+  // order rows appear in, which Postgres leaves unspecified within a tie.
+  const rows = sortFrozen(
+    (standings.data ?? []).map((row) => ({
+      member_id: row.member_id,
+      nickname: row.nickname,
+      avatar_url: row.avatar_url,
+      up: row.up,
+      down: row.down,
+      net: row.net,
+      total_votes: row.total_votes,
+      rank: row.rank,
+      movement: row.movement,
+    })),
+  );
 
   // A closed week should look like the same board, frozen — so it picks the
   // same layout the live board would at this width.

@@ -1,25 +1,30 @@
 -- ============================================================================
--- Flip the ranking tiebreak: at a tied net score, fewer downvotes wins.
+-- Rank on net ALONE, and let downvotes decide order inside a tie.
 --
--- Before: net DESC, total_votes DESC — a contested +4 (5/1) outranked a clean
---         +4 (4/0), on the theory that provoking a reaction beat being ignored.
--- After:  net DESC, total_votes ASC  — the clean sheet wins. 4/0 above 5/1.
+-- Before: rank() over (order by net desc, total_votes desc)
+--         Two members both on +5 could hold different rank numbers, because the
+--         pair (net, total_votes) was the grouping key. 6/1 became #3 and 5/0
+--         became #4 — same score, different rank, which reads as a bug.
+-- After:  rank() over (order by net desc)
+--         Same net, same rank. All four members on +5 are #3, and the next rank
+--         skips past all of them: 1, 2, 3, 3, 3, 3, 7, 7, 7, 7, 11.
 --
--- Ordering by total_votes ascending IS ordering by downvotes ascending: with
--- net fixed, up = net + down, so total = up + down = net + 2·down. Keeping the
--- expression on total_votes means the rank grouping stays on the pair
--- (net, total_votes), so ties still share a rank and the next rank still skips
--- — 1, 1, 3, 4 (§1.3).
+-- Downvotes no longer touch the rank NUMBER. They order rows inside a shared
+-- rank, exactly like nickname always has — the clean sheet sits on top, so 5/0
+-- renders above 6/1 while both read #3. That ordering is applied where the rows
+-- are displayed (src/lib/ranking.ts), because a window function's rank is a
+-- number, not a sort.
 --
 -- This has to change in THREE places or the board will disagree with itself:
---   1. close_current_week()   — the frozen snapshot           (here)
---   2. admin_update_result()  — re-ranks a week after an edit  (here)
---   3. src/lib/ranking.ts     — the live board, client-side    (already done)
+--   1. close_current_week()   — the frozen snapshot            (here)
+--   2. admin_update_result()  — re-ranks a week after an edit   (here)
+--   3. src/lib/ranking.ts     — the live board, client-side     (already done)
 --
 -- Existing rows in weekly_results are NOT touched. Closed weeks are immutable
--- snapshots (rule 3), so past weeks keep the ranks they were closed with, and
--- the archive still shows what everyone saw at the time. Only weeks closed from
--- now on use the new rule.
+-- snapshots (rule 3). Nothing has been closed yet, so in practice there is no
+-- history to disagree with.
+--
+-- Safe to run more than once: both functions are CREATE OR REPLACE.
 -- ============================================================================
 
 begin;
@@ -74,8 +79,9 @@ begin
     group by m.id
   ), ranked as (
     select a.*,
-           -- ASC, not DESC: a clean +4 outranks a contested +4.
-           (rank() over (order by a.net desc, a.total_votes asc))::int as rank
+           -- net only: the same score is the same rank, and the next rank
+           -- skips past everyone sharing it.
+           (rank() over (order by a.net desc))::int as rank
     from agg a
   )
   select w_id,
@@ -196,9 +202,9 @@ end $$;
 revoke all on function public.close_current_week(boolean) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
--- The same flip where an admin edits a frozen result and the week re-ranks.
--- Leaving this on DESC would make a hand-edited week disagree with every week
--- closed normally.
+-- The same rule where an admin edits a frozen result and the week re-ranks.
+-- Leaving the old ordering here would make a hand-edited week disagree with
+-- every week closed normally.
 -- ---------------------------------------------------------------------------
 create or replace function public.admin_update_result(
   p_week_id int, p_member_id uuid, p_up int, p_down int)
@@ -224,7 +230,7 @@ begin
 
   with ranked as (
     select member_id,
-           rank() over (order by net desc, total_votes asc) as r
+           rank() over (order by net desc) as r
     from public.weekly_results where week_id = p_week_id
   )
   update public.weekly_results wr
