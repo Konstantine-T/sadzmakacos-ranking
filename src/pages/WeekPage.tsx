@@ -6,7 +6,9 @@ import { NotFoundPage } from './NotFoundPage';
 import { useWeek } from '@/features/week/api';
 import { useWeekStandings } from '@/features/standings/api';
 import { StandingsList } from '@/features/standings/StandingsList';
+import { StandingsTable } from '@/features/standings/StandingsTable';
 import { PostCard } from '@/features/posts/PostCard';
+import { useWideLayout } from '@/app/layout';
 import { useScoredPosts } from '@/features/posts/api';
 import { useMemberMap } from '@/features/members/api';
 import { usePostReactionCounts } from '@/features/reactions/api';
@@ -24,6 +26,7 @@ export function WeekPage() {
   const weekId = Number(id);
   const valid = Number.isFinite(weekId);
 
+  const wide = useWideLayout();
   const weekQuery = useWeek(valid ? weekId : undefined);
   const standings = useWeekStandings(valid ? weekId : undefined);
   const posts = useScoredPosts(valid ? weekId : undefined);
@@ -49,10 +52,14 @@ export function WeekPage() {
     movement: row.movement,
   }));
 
+  // A closed week should look like the same board, frozen — so it picks the
+  // same layout the live board would at this width.
+  const Board = wide ? StandingsTable : StandingsList;
+
   return (
     <PageTransition>
-      <Stack spacing={3} sx={{ pt: 2 }}>
-        <Paper sx={{ mx: 2, borderRadius: 4, p: 2.5 }}>
+      <Stack spacing={3} sx={{ pt: { xs: 2, lg: 0 } }}>
+        <Paper sx={{ mx: { xs: 2, lg: 0 }, borderRadius: '16px', p: 2.5 }}>
           <Stack spacing={1}>
             <Stack direction="row" alignItems="center" spacing={1}>
               <Typography variant="h1">{ka.week.number(week.id)}</Typography>
@@ -70,38 +77,45 @@ export function WeekPage() {
         </Paper>
 
         <Box>
-          <Typography variant="h2" sx={{ px: 2, mb: 1 }}>
+          <Typography variant="h2" sx={{ px: { xs: 2, lg: 0 }, mb: 1 }}>
             {ka.standings.title}
           </Typography>
 
           {isOpen ? (
-            <Alert severity="info" sx={{ mx: 2, borderRadius: 3 }}>
+            <Alert severity="info" sx={{ mx: { xs: 2, lg: 0 }, borderRadius: '12px' }}>
               {ka.week.current}
             </Alert>
           ) : (
-            /* Full-bleed, exactly like the live board — a closed week should
-               look like the same board, frozen, not like a different screen. */
-            <StandingsList rows={rows} loading={standings.isPending} />
+            <Board rows={rows} loading={standings.isPending} />
           )}
         </Box>
 
-        <Divider sx={{ mx: 2 }} />
+        <Divider sx={{ mx: { xs: 2, lg: 0 } }} />
 
-        <Stack spacing={1.5} sx={{ px: 2 }}>
+        <Stack spacing={1.5} sx={{ px: { xs: 2, lg: 0 } }}>
           <Typography variant="h2">{ka.posts.title}</Typography>
           {posts.rows.length === 0 ? (
             <EmptyState text={ka.posts.emptyArchive} />
           ) : (
-            posts.rows.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                author={members.get(post.author_id)}
-                myVote={null}
-                locked
-                reactionCounts={postReactions.counts.get(post.id)}
-              />
-            ))
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
+                gap: 1.75,
+                alignItems: 'start',
+              }}
+            >
+              {posts.rows.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  author={members.get(post.author_id)}
+                  myVote={null}
+                  locked
+                  reactionCounts={postReactions.counts.get(post.id)}
+                />
+              ))}
+            </Box>
           )}
         </Stack>
       </Stack>

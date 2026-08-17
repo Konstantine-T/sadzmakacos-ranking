@@ -6,21 +6,44 @@ import { ka } from '@/i18n/ka';
 
 interface WeekCountdownProps {
   endsAt: string;
+  /** The wide layout gives the clock a little more room, and takes it. */
+  size?: 'phone' | 'wide';
   /** Fires once when the clock reaches zero, so the page can refetch. */
   onExpire?: () => void;
 }
 
-function Segment({ value, label, dim }: { value: number; label: string; dim?: boolean }) {
+const SIZES = {
+  phone: { digit: 32, label: 11, min: 44, gap: '14px' },
+  wide: { digit: 34, label: 10.5, min: 46, gap: '22px' },
+} as const;
+
+function Segment({
+  value,
+  label,
+  dim,
+  size,
+}: {
+  value: number;
+  label: string;
+  dim?: boolean;
+  size: (typeof SIZES)[keyof typeof SIZES];
+}) {
   return (
-    <Stack alignItems="center" spacing="3px" sx={{ minWidth: 44 }}>
+    <Stack alignItems="center" spacing="3px" sx={{ minWidth: size.min }}>
       <Typography
         variant="numeral"
-        sx={{ fontSize: 32, letterSpacing: '-0.04em', color: dim ? 'textMute' : 'text.primary' }}
+        sx={{
+          fontSize: size.digit,
+          letterSpacing: '-0.04em',
+          color: dim ? 'textMute' : 'text.primary',
+        }}
         aria-hidden
       >
         {String(value).padStart(2, '0')}
       </Typography>
-      <Typography sx={{ fontSize: 11, fontWeight: 500, color: 'textMute' }}>{label}</Typography>
+      <Typography sx={{ fontSize: size.label, fontWeight: 500, color: 'textMute' }}>
+        {label}
+      </Typography>
     </Stack>
   );
 }
@@ -35,8 +58,9 @@ function Segment({ value, label, dim }: { value: number; label: string; dim?: bo
  * board that runs without user input, and it stops entirely under reduced
  * motion (§9.5).
  */
-export function WeekCountdown({ endsAt, onExpire }: WeekCountdownProps) {
+export function WeekCountdown({ endsAt, size = 'phone', onExpire }: WeekCountdownProps) {
   const reduced = useReducedMotion();
+  const metrics = SIZES[size];
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -63,14 +87,14 @@ export function WeekCountdown({ endsAt, onExpire }: WeekCountdownProps) {
   const digits = (
     <Stack
       direction="row"
-      spacing="14px"
+      spacing={metrics.gap}
       alignItems="flex-end"
       aria-label={`${ka.week.endsIn}: ${countdown.days} ${ka.week.days}, ${countdown.hours} ${ka.week.hours}, ${countdown.minutes} ${ka.week.minutes}`}
     >
-      <Segment value={countdown.days} label={ka.week.days} />
-      <Segment value={countdown.hours} label={ka.week.hours} />
-      <Segment value={countdown.minutes} label={ka.week.minutes} />
-      <Segment value={countdown.seconds} label={ka.week.seconds} dim />
+      <Segment value={countdown.days} label={ka.week.days} size={metrics} />
+      <Segment value={countdown.hours} label={ka.week.hours} size={metrics} />
+      <Segment value={countdown.minutes} label={ka.week.minutes} size={metrics} />
+      <Segment value={countdown.seconds} label={ka.week.seconds} dim size={metrics} />
     </Stack>
   );
 

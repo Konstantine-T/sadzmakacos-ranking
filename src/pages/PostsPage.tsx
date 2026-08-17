@@ -47,7 +47,7 @@ export function PostsPage() {
   if (!week) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="warning" sx={{ borderRadius: 3 }}>
+        <Alert severity="warning" sx={{ borderRadius: '12px' }}>
           {ka.errors.noOpenWeek}
         </Alert>
       </Box>
@@ -58,8 +58,14 @@ export function PostsPage() {
 
   return (
     <PageTransition>
-      <Stack spacing={2} sx={{ p: 2 }}>
-        <Stack direction="row" alignItems="baseline" justifyContent="space-between">
+      <Stack spacing={2} sx={{ p: { xs: 2, lg: 0 } }}>
+        {/* The wide shell's top bar already says "კვირის პოსტები". */}
+        <Stack
+          direction="row"
+          alignItems="baseline"
+          justifyContent="space-between"
+          sx={{ display: { lg: 'none' } }}
+        >
           <Typography variant="h2">{ka.posts.title}</Typography>
           <Typography variant="caption" color="text.secondary">
             {ka.posts.oncePerWeek}
@@ -78,7 +84,16 @@ export function PostsPage() {
         {posts.rows.length === 0 ? (
           <EmptyState text={ka.posts.empty} />
         ) : (
-          <Stack spacing={1.5}>
+          // One column on a phone, two once there is room — a post is 150
+          // characters, so a full-width card at 900px is mostly empty paper.
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
+              gap: 1.75,
+              alignItems: 'start',
+            }}
+          >
             {posts.rows.map((post) => (
               <PostCard
                 key={post.id}
@@ -94,7 +109,7 @@ export function PostsPage() {
                 }
               />
             ))}
-          </Stack>
+          </Box>
         )}
       </Stack>
     </PageTransition>

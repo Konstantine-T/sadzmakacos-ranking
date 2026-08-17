@@ -15,10 +15,17 @@ interface BadgeShelfProps {
   title?: string;
   /** Profiles render the shelf bare; the badge wall keeps its card. */
   bare?: boolean;
+  /** Inside the wide hero the chips sit under the bio and need no heading. */
+  hideTitle?: boolean;
 }
 
 /** Badges are awarded automatically at week close and never by hand (§1.8). */
-export function BadgeShelf({ badges, title = ka.profile.badges, bare }: BadgeShelfProps) {
+export function BadgeShelf({
+  badges,
+  title = ka.profile.badges,
+  bare,
+  hideTitle,
+}: BadgeShelfProps) {
   // Collapse repeats: "კვირის მეფე ×3" rather than three identical chips.
   const counts = new Map<string, number>();
   for (const badge of badges) {
@@ -76,6 +83,7 @@ export function BadgeShelf({ badges, title = ka.profile.badges, bare }: BadgeShe
     );
 
   if (bare) {
+    if (hideTitle) return counts.size === 0 ? null : body;
     return (
       <Stack spacing={1.25}>
         <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.secondary' }}>
@@ -87,7 +95,7 @@ export function BadgeShelf({ badges, title = ka.profile.badges, bare }: BadgeShe
   }
 
   return (
-    <Paper sx={{ borderRadius: 4, p: 2 }}>
+    <Paper sx={{ borderRadius: '16px', p: 2 }}>
       <Typography variant="h3" sx={{ mb: 1.5 }}>
         {title}
       </Typography>

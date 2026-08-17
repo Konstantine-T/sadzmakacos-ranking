@@ -14,13 +14,28 @@ import {
   Typography,
 } from "@mui/material";
 import { ka } from "@/i18n/ka";
-import { useOpenWeek } from "@/features/week/api";
+import { useOpenWeek, useTurnout } from "@/features/week/api";
+import { NavRail } from "./NavRail";
+import { SideRail } from "./SideRail";
+import { useWideLayout, useWidestLayout } from "./layout";
+import { formatDay } from "@/lib/time";
 
 const NAV = [
   { to: "/", label: ka.nav.ranking },
   { to: "/posts", label: ka.nav.posts },
   { to: "/weeks", label: ka.nav.archive },
   { to: "/me", label: ka.nav.profile },
+];
+
+/**
+ * What the wide layout's top bar calls each destination. The rail already
+ * carries the app's name, so the bar names the page instead.
+ */
+const TITLES = [
+  ka.standings.title,
+  ka.posts.title,
+  ka.archive.title,
+  ka.nav.profile,
 ];
 
 const BOTTOM_NAV_HEIGHT = 66;
@@ -34,6 +49,9 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const week = useOpenWeek();
+  const wide = useWideLayout();
+  const widest = useWidestLayout();
+  const turnout = useTurnout(week.data?.id);
 
   const activeIndex = useMemo(() => {
     const path = location.pathname;
@@ -51,6 +69,140 @@ export function AppShell() {
     week.data !== undefined &&
     !week.data.is_paused;
 
+  const backButton = (label: string) => (
+    <ButtonBase
+      onClick={() => navigate(-1)}
+      sx={{
+        flex: "none",
+        height: 44,
+        px: 1.75,
+        whiteSpace: "nowrap",
+        borderRadius: 999,
+        border: "1px solid",
+        borderColor: "divider",
+        color: "text.secondary",
+        fontSize: 13,
+        fontWeight: 600,
+        "&:hover": {
+          borderColor: "primary.main",
+          color: "text.primary",
+        },
+      }}
+    >
+      {label}
+    </ButtonBase>
+  );
+
+  // ----------------------------------------------------------------- wide ---
+  // Rail on the left, page in the middle, peripheral column on the right once
+  // there is room for it. Same four destinations, same active-dash language —
+  // the dash just turns vertical when the labels stack.
+  if (wide) {
+    return (
+      <Box
+        sx={{ minHeight: "100dvh", display: "flex", alignItems: "flex-start" }}
+      >
+        <NavRail
+          items={NAV}
+          activeIndex={activeIndex}
+          turnout={
+            week.data
+              ? {
+                  voters: turnout.data?.voters ?? 0,
+                  total: turnout.data?.total_members ?? 0,
+                }
+              : undefined
+          }
+          onNavigate={(to) => navigate(to)}
+        />
+
+        <Box
+          sx={{
+            flexGrow: 1,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box
+            sx={{
+              position: "sticky",
+              top: 0,
+              zIndex: (t) => t.zIndex.appBar,
+              height: 64,
+              px: 3.5,
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderBottom: "1px solid",
+              borderColor: "hairline",
+              backgroundColor: (t) =>
+                t.palette.mode === "dark"
+                  ? "rgba(20,16,15,0.9)"
+                  : "rgba(251,247,246,0.9)",
+              backdropFilter: "blur(16px)",
+            }}
+          >
+            <Typography
+              variant="h3"
+              sx={{
+                flex: "none",
+                whiteSpace: "nowrap",
+                fontFamily: (t) => t.typography.h1.fontFamily,
+              }}
+            >
+              {TITLES[activeIndex] ?? ka.appName}
+            </Typography>
+
+            {week.data && (
+              <Typography
+                sx={{
+                  flex: "none",
+                  whiteSpace: "nowrap",
+                  fontSize: 12.5,
+                  color: "text.secondary",
+                }}
+              >
+                {ka.week.range(
+                  formatDay(week.data.starts_at),
+                  formatDay(week.data.ends_at),
+                )}
+              </Typography>
+            )}
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            {detail && backButton(ka.nav.backToRanking)}
+          </Box>
+
+          <Box
+            component="main"
+            sx={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 3,
+              px: 3.5,
+              pt: 3,
+              pb: 5,
+            }}
+          >
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Outlet />
+            </Box>
+
+            {widest && (
+              <SideRail
+                weekId={week.data?.id}
+                hidePosts={location.pathname.startsWith("/posts")}
+              />
+            )}
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
+
+  // ---------------------------------------------------------------- phone ---
   return (
     <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       <AppBar
@@ -83,27 +235,7 @@ export function AppShell() {
               {ka.appName}
             </Typography>
 
-            {detail && (
-              <ButtonBase
-                onClick={() => navigate(-1)}
-                sx={{
-                  height: 44,
-                  px: 1.75,
-                  borderRadius: 999,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  color: "text.secondary",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    color: "text.primary",
-                  },
-                }}
-              >
-                {ka.common.back}
-              </ButtonBase>
-            )}
+            {detail && backButton(ka.common.back)}
 
             {/* The week is open and taking votes — the only status the header carries. */}
             {live && (
@@ -195,7 +327,7 @@ export function AppShell() {
                     height: 50,
                     flexDirection: "column",
                     gap: "6px",
-                    borderRadius: 2,
+                    borderRadius: '10px',
                   }}
                 >
                   <Box

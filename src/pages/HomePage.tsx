@@ -6,9 +6,12 @@ import { useToast } from '@/app/providers/ToastProvider';
 import { PageTransition } from '@/components/PageTransition';
 import { Splash } from '@/components/Splash';
 import { WeekCard } from '@/features/week/WeekCard';
+import { WeekStrip } from '@/features/week/WeekStrip';
 import { useAnnouncements, useOpenWeek, useTurnout, weekKeys } from '@/features/week/api';
 import { StandingsList } from '@/features/standings/StandingsList';
+import { StandingsTable } from '@/features/standings/StandingsTable';
 import { ScopeToggle } from '@/features/standings/ScopeToggle';
+import { useWideLayout } from '@/app/layout';
 import { useCastVote, useMyVotes, useRankedStandings } from '@/features/standings/api';
 import { useRankedAllTime, type AllTimeSort } from '@/features/allTime/api';
 import { SortPicker } from '@/features/allTime/SortPicker';
@@ -70,6 +73,7 @@ export function HomePage() {
 
   const [scope, setScope] = useState<Scope>('week');
   const [sort, setSort] = useState<AllTimeSort>('total_net');
+  const wide = useWideLayout();
 
   const weekQuery = useOpenWeek();
   const week = weekQuery.data;
@@ -95,7 +99,7 @@ export function HomePage() {
   if (!week) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="warning" sx={{ borderRadius: 3 }}>
+        <Alert severity="warning" sx={{ borderRadius: '12px' }}>
           {ka.errors.noOpenWeek}
         </Alert>
       </Box>
@@ -105,38 +109,64 @@ export function HomePage() {
   const votingDisabled = week.is_paused;
   const isAllTime = scope === 'allTime';
 
+  // The two boards take the same props on purpose — one set of behaviour, two
+  // layouts. Only the shape of a row differs, never what a row can do.
+  const Board = wide ? StandingsTable : StandingsList;
+
+  const scopeToggle = (
+    <ScopeToggle
+      value={scope}
+      segments={SCOPES}
+      ariaLabel={ka.standings.title}
+      onChange={setScope}
+    />
+  );
+
   return (
     <PageTransition>
-      <Stack sx={{ pt: 1.75 }}>
-        <Stack spacing={2} sx={{ px: 2 }}>
+      <Stack sx={{ pt: { xs: 1.75, lg: 0 } }} spacing={wide ? 2.25 : 0}>
+        <Stack spacing={2} sx={{ px: { xs: 2, lg: 0 } }}>
           {announcements.data?.map((announcement) => (
-            <Alert key={announcement.id} severity="info" sx={{ borderRadius: 3 }}>
+            <Alert key={announcement.id} severity="info" sx={{ borderRadius: '12px' }}>
               {announcement.body}
             </Alert>
           ))}
 
-          <WeekCard
-            week={week}
-            voters={turnout.data?.voters ?? 0}
-            total={turnout.data?.total_members ?? 0}
-            onExpire={() => {
-              // The cron job closes the week server-side; refetch so the new
-              // one appears without a manual reload.
-              queryClient.invalidateQueries({ queryKey: weekKeys.open });
-            }}
-          />
+          {wide ? (
+            <WeekStrip
+              week={week}
+              rows={rows}
+              onExpire={() => {
+                queryClient.invalidateQueries({ queryKey: weekKeys.open });
+              }}
+            />
+          ) : (
+            <WeekCard
+              week={week}
+              voters={turnout.data?.voters ?? 0}
+              total={turnout.data?.total_members ?? 0}
+              onExpire={() => {
+                // The cron job closes the week server-side; refetch so the new
+                // one appears without a manual reload.
+                queryClient.invalidateQueries({ queryKey: weekKeys.open });
+              }}
+            />
+          )}
 
-          <ScopeToggle
-            value={scope}
-            segments={SCOPES}
-            ariaLabel={ka.standings.title}
-            onChange={setScope}
-          />
+          {/* On a phone the scope control gets its own full-width row. Wide, the
+              shell's top bar already names the page, so the control takes the
+              title's place instead of costing another row. */}
+          {!wide && scopeToggle}
 
-          <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1}>
-            <Typography variant="h2">
-              {isAllTime ? ka.allTime.title : ka.standings.title}
-            </Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+            {wide ? (
+              <Box sx={{ width: 260, flex: 'none' }}>{scopeToggle}</Box>
+            ) : (
+              <Typography variant="h2">
+                {isAllTime ? ka.allTime.title : ka.standings.title}
+              </Typography>
+            )}
+
             {isAllTime ? (
               <SortPicker value={sort} onChange={setSort} />
             ) : (
@@ -147,12 +177,12 @@ export function HomePage() {
           </Stack>
         </Stack>
 
-        <Box sx={{ mt: 1 }}>
+        <Box sx={{ mt: { xs: 1, lg: 0 } }}>
           {isAllTime ? (
             // `played` is false while the query is still in flight, so the
             // pending check has to come first or the empty state flashes.
             allTime.isPending || allTime.played ? (
-              <StandingsList
+              <Board
                 rows={allTime.rows}
                 loading={allTime.isPending}
                 myId={member?.id}
@@ -160,14 +190,14 @@ export function HomePage() {
                 detailFor={(row) => <AllTimeDetail row={row as AllTimeRow} />}
               />
             ) : (
-              <Box sx={{ px: 2 }}>
-                <Alert severity="info" sx={{ borderRadius: 3 }}>
+              <Box sx={{ px: { xs: 2, lg: 0 } }}>
+                <Alert severity="info" sx={{ borderRadius: '12px' }}>
                   {ka.allTime.empty}
                 </Alert>
               </Box>
             )
           ) : (
-            <StandingsList
+            <Board
               rows={rows}
               loading={isPending}
               myId={member?.id}
@@ -186,7 +216,7 @@ export function HomePage() {
         </Box>
 
         {isAllTime && allTime.played && (
-          <Box sx={{ px: 2, pt: 3 }}>
+          <Box sx={{ px: { xs: 2, lg: 0 }, pt: 3 }}>
             <BadgeShelf badges={badges.data ?? []} title={ka.allTime.badgeWall} />
           </Box>
         )}

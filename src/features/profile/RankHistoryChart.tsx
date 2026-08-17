@@ -19,7 +19,7 @@ const WINDOW = 8;
 export function RankHistoryChart({ results }: { results: WeeklyResult[] }) {
   if (results.length === 0) {
     return (
-      <Paper sx={{ borderRadius: 4 }}>
+      <Paper sx={{ borderRadius: '16px' }}>
         <EmptyState text={ka.profile.noHistory} />
       </Paper>
     );
@@ -29,7 +29,7 @@ export function RankHistoryChart({ results }: { results: WeeklyResult[] }) {
   const worst = Math.max(...window.map((r) => r.rank), 2);
 
   return (
-    <Paper sx={{ borderRadius: 4, p: 2 }}>
+    <Paper sx={{ borderRadius: '16px', p: 2 }}>
       <Stack spacing={1.75}>
         <Stack direction="row" alignItems="baseline" justifyContent="space-between">
           <Typography sx={{ fontSize: 15, fontWeight: 600 }}>{ka.profile.history}</Typography>
@@ -38,7 +38,14 @@ export function RankHistoryChart({ results }: { results: WeeklyResult[] }) {
           </Typography>
         </Stack>
 
-        <Stack direction="row" spacing="6px" alignItems="flex-end" sx={{ height: 96 }}>
+        {/* The design gives the bars more air once the card is half a wide
+            column rather than the whole phone. */}
+        <Stack
+          direction="row"
+          spacing={{ xs: '6px', lg: '8px' }}
+          alignItems="flex-end"
+          sx={{ height: { xs: 96, lg: 132 } }}
+        >
           {window.map((result) => {
             const first = result.rank === 1;
             const podium = result.rank <= 3;

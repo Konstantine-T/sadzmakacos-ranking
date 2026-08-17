@@ -37,7 +37,18 @@ export function WeekCard({ week, voters, total, onExpire }: WeekCardProps) {
   }, []);
 
   return (
-    <Paper sx={{ borderRadius: 4, overflow: "hidden" }}>
+    <Paper
+      sx={{
+        borderRadius: "16px",
+        overflow: "hidden",
+        // Same lit surface as the wide layout's strip, angled down instead of
+        // across because the card is tall rather than wide.
+        background: (t) =>
+          t.palette.mode === "dark"
+            ? "linear-gradient(180deg, #221B19 0%, #1E1918 100%)"
+            : t.palette.background.paper,
+      }}
+    >
       <Box sx={{ height: 2, bgcolor: "surface2" }}>
         <Box
           sx={{
@@ -83,7 +94,7 @@ export function WeekCard({ week, voters, total, onExpire }: WeekCardProps) {
         <WeekCountdown endsAt={week.ends_at} onExpire={onExpire} />
 
         {week.is_paused && (
-          <Alert severity="warning" variant="outlined" sx={{ borderRadius: 2 }}>
+          <Alert severity="warning" variant="outlined" sx={{ borderRadius: "12px" }}>
             {ka.week.paused}
           </Alert>
         )}

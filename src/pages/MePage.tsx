@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { useWideLayout } from '@/app/layout';
 import ShieldIcon from '@mui/icons-material/ShieldOutlined';
 import ChevronIcon from '@mui/icons-material/ChevronRightRounded';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -83,6 +84,7 @@ export function MePage() {
   const { toast, toastError } = useToast();
   const navigate = useNavigate();
   const updateProfile = useUpdateMyProfile();
+  const wide = useWideLayout();
 
   const results = useMemberResults(member?.id);
   const badges = useMemberBadges(member?.id);
@@ -106,26 +108,43 @@ export function MePage() {
     );
   };
 
+  const shelf = <BadgeShelf badges={badges.data ?? []} bare hideTitle={wide} />;
+
   return (
     <PageTransition>
-      <Stack spacing={1.75} sx={{ p: 2 }}>
+      <Stack spacing={wide ? 2 : 1.75} sx={{ p: { xs: 2, lg: 0 } }}>
         <ProfileHero
           memberId={member.id}
           nickname={member.nickname}
           bio={member.bio}
           avatarPath={member.avatarUrl}
           results={results.data ?? []}
+          wide={wide}
+          badges={shelf}
         />
 
-        <BadgeShelf badges={badges.data ?? []} bare />
-        <RankHistoryChart results={results.data ?? []} />
-        <WeekBreakdownTable results={results.data ?? []} />
+        {!wide && shelf}
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
+            gap: 2,
+            alignItems: 'start',
+          }}
+        >
+          <RankHistoryChart results={results.data ?? []} />
+          <WeekBreakdownTable results={results.data ?? []} />
+        </Box>
 
         <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.secondary', pt: 1 }}>
           {ka.profile.settings}
         </Typography>
 
-        <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+        {/* Settings are a narrow-column thing even on a wide screen — a 56px
+            row stretched to 900px puts its control a whole screen from its
+            label. */}
+        <Paper sx={{ borderRadius: '16px', overflow: 'hidden', maxWidth: { lg: 560 } }}>
           <SettingRow label={ka.profile.edit} onClick={() => setEditing((open) => !open)}>
             <ChevronIcon
               sx={{

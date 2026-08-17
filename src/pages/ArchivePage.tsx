@@ -55,14 +55,17 @@ export function ArchivePage() {
 
   return (
     <PageTransition>
-      <Stack spacing={1.5} sx={{ p: 2 }}>
-        <Typography variant="h2">{ka.archive.title}</Typography>
+      <Stack spacing={1.5} sx={{ p: { xs: 2, lg: 0 } }}>
+        {/* The wide shell's top bar already says "არქივი". */}
+        <Typography variant="h2" sx={{ display: { lg: 'none' } }}>
+          {ka.archive.title}
+        </Typography>
 
         {list.length === 0 ? (
           <EmptyState text={ka.archive.empty} />
         ) : (
           <>
-            <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+            <Paper sx={{ borderRadius: '16px', overflow: 'hidden' }}>
               <ButtonBase
                 onClick={() => setPickerOpen((open) => !open)}
                 aria-expanded={pickerOpen}
@@ -104,12 +107,20 @@ export function ArchivePage() {
               </Collapse>
             </Paper>
 
-            {list.map((week) => {
-              const podium = podiums.data?.get(week.id) ?? [];
-              const isOpen = week.status === 'open';
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' },
+                gap: 1.75,
+                alignItems: 'start',
+              }}
+            >
+              {list.map((week) => {
+                const podium = podiums.data?.get(week.id) ?? [];
+                const isOpen = week.status === 'open';
 
-              return (
-                <Paper key={week.id} sx={{ borderRadius: 4, overflow: 'hidden' }}>
+                return (
+                  <Paper key={week.id} sx={{ borderRadius: '16px', overflow: 'hidden' }}>
                   <ButtonBase
                     onClick={() => navigate(`/weeks/${week.id}`)}
                     sx={{
@@ -206,9 +217,10 @@ export function ArchivePage() {
                       })}
                     </Stack>
                   )}
-                </Paper>
-              );
-            })}
+                  </Paper>
+                );
+              })}
+            </Box>
           </>
         )}
       </Stack>

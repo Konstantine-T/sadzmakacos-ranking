@@ -6,6 +6,12 @@ import type { VoteValue } from './api';
 interface VoteToggleProps {
   value: VoteValue;
   disabled?: boolean;
+  /**
+   * `touch` is 44px tall for rule 5. `compact` is the 38px the wide layout
+   * draws — that layout is mouse-driven, and rule 5 is a thumb rule; 38px is
+   * still well past the 24px WCAG 2.2 minimum.
+   */
+  size?: 'touch' | 'compact';
   onChange: (value: VoteValue) => void;
 }
 
@@ -23,9 +29,11 @@ const MotionButtonBase = motion.create(ButtonBase);
  * The design draws these 42px tall; they ship at 44 because rule 5 is not
  * negotiable and this is the most-tapped control in the app.
  */
-export function VoteToggle({ value, disabled, onChange }: VoteToggleProps) {
+export function VoteToggle({ value, disabled, size = 'touch', onChange }: VoteToggleProps) {
   const reduced = useReducedMotion();
   const press = reduced ? {} : { whileTap: { scale: 0.94 } };
+  const height = size === 'touch' ? 44 : 38;
+  const glyph = size === 'touch' ? 17 : 15;
 
   const half = (direction: 1 | -1) => {
     const active = value === direction;
@@ -45,9 +53,9 @@ export function VoteToggle({ value, disabled, onChange }: VoteToggleProps) {
         }}
         sx={{
           width: 46,
-          height: 44,
+          height,
           flex: 'none',
-          fontSize: 17,
+          fontSize: glyph,
           lineHeight: 1,
           fontWeight: 700,
           borderRight: direction === 1 ? '1px solid' : 0,
@@ -72,7 +80,7 @@ export function VoteToggle({ value, disabled, onChange }: VoteToggleProps) {
       sx={{
         display: 'flex',
         flex: 'none',
-        borderRadius: '11px',
+        borderRadius: size === 'touch' ? '11px' : '10px',
         overflow: 'hidden',
         border: '1px solid',
         borderColor: 'divider',

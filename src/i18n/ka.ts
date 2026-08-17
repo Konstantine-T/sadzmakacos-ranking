@@ -16,12 +16,16 @@ export const ka = {
     profile: "პროფილი",
     allTime: "საერთო",
     admin: "ადმინი",
+    /** The wide layout has room to say where "back" goes. */
+    backToRanking: "უკან რანკინგზე",
   },
 
   week: {
     current: "მიმდინარე კვირა",
     endsIn: "დარჩა",
     open: "ღია",
+    openWeek: "ღია კვირა",
+    closes: "კვირა იხურება",
     turnout: (v: number, t: number) => `${v}/${t} ხმა მიცემულია`,
     closed: "კვირა დასრულდა",
     paused: "ხმის მიცემა შეჩერებულია",
@@ -55,6 +59,13 @@ export const ka = {
     you: "შენ",
     /** The hint beside the list title — one line, so it stays short here. */
     hint: "",
+    /** Column headers — the wide layout has room for a real table. */
+    colMember: "წევრი",
+    colChange: "ცვლილება",
+    colTemperature: "ტემპერატურა",
+    colVote: "ხმა",
+    /** The self-row note, trimmed to fit a 96px column. */
+    noSelfShort: "საკუთარ თავს ვერ აძლევ",
     toneWarm: "თბილი კვირა",
     toneCold: "ცივი კვირა",
     toneDivisive: "გამყოფი კვირა",
@@ -124,6 +135,7 @@ export const ka = {
 
   archive: {
     title: "არქივი",
+    recent: "ბოლო კვირები",
     pick: "აირჩიე კვირა",
     empty: "არქივი ცარიელია.",
     open: "მიმდინარე",

@@ -18,7 +18,7 @@ import type { WeeklyResult } from '@/lib/database.types';
 export function WeekBreakdownTable({ results }: { results: WeeklyResult[] }) {
   if (results.length === 0) {
     return (
-      <Paper sx={{ borderRadius: 4 }}>
+      <Paper sx={{ borderRadius: '16px' }}>
         <EmptyState text={ka.profile.noHistory} />
       </Paper>
     );
@@ -28,7 +28,7 @@ export function WeekBreakdownTable({ results }: { results: WeeklyResult[] }) {
   const rows = [...results].reverse();
 
   return (
-    <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
+    <Paper sx={{ borderRadius: '16px', overflow: 'hidden' }}>
       <Typography
         sx={{
           fontSize: 15,

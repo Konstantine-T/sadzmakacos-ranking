@@ -93,7 +93,7 @@ export function PostCard({
   return (
     <Paper
       sx={{
-        borderRadius: 4,
+        borderRadius: '16px',
         p: 1.75,
         display: 'flex',
         flexDirection: 'column',

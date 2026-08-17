@@ -61,6 +61,12 @@ export function buildTheme(mode: ColorMode): Theme {
       success: { main: signal.up },
     },
 
+    /**
+     * CAREFUL: MUI multiplies a *numeric* `sx` borderRadius by this value, so
+     * with 12 here `sx={{ borderRadius: 4 }}` is 48px, not 16px. Write radii as
+     * strings — `borderRadius: '16px'` — which MUI passes through untouched.
+     * Everything drawn from the design spec does exactly that.
+     */
     shape: { borderRadius: radii.md },
 
     /**

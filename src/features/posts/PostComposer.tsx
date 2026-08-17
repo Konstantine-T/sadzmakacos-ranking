@@ -46,7 +46,7 @@ export function PostComposer({
 
   if (alreadyPosted) {
     return (
-      <Alert severity="info" variant="outlined" sx={{ borderRadius: 3 }}>
+      <Alert severity="info" variant="outlined" sx={{ borderRadius: '12px' }}>
         {ka.posts.alreadyPosted}
       </Alert>
     );
@@ -136,7 +136,7 @@ export function PostComposer({
         <DialogTitle>{ka.posts.confirmTitle}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>{ka.posts.onceWarning}</DialogContentText>
-          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '8px' }}>
             <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
               {trimmed}
             </Typography>
