@@ -29,7 +29,7 @@ function elapsedPct(week: Week, now: number): number {
  */
 export function WeekCard({ week, voters, total, onExpire }: WeekCardProps) {
   const [now, setNow] = useState(() => Date.now());
-
+  console.log(voters, total);
   useEffect(() => {
     // A minute is plenty for a bar that takes a week to cross the card.
     const id = setInterval(() => setNow(Date.now()), 60_000);

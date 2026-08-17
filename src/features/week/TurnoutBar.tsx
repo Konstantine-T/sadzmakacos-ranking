@@ -1,7 +1,5 @@
 import { Box, Stack, Typography } from "@mui/material";
 import { motion, useReducedMotion } from "framer-motion";
-import { ka } from "@/i18n/ka";
-
 /**
  * "14/20 ხმა მიცემულია" (§5) — how many people have voted at all this week.
  *
