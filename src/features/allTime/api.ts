@@ -55,6 +55,7 @@ export function useRankedAllTime(sort: AllTimeSort) {
       (a, b) =>
         key(b) - key(a) ||
         b.total_net - a.total_net ||
+        a.total_down - b.total_down || // same tiebreak as the weekly board
         collator.compare(a.nickname, b.nickname),
     );
 

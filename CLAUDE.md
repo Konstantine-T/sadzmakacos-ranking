@@ -38,11 +38,16 @@ Full spec: [sadzmakatsos-ranki-plan.md](sadzmakatsos-ranki-plan.md).
   no admin INSERT/UPDATE/DELETE policy anywhere on purpose.
 - **Column-level GRANTs, not RLS, keep members out of `is_admin`.** RLS cannot
   say "you may edit your nickname but not your admin flag"; grants can.
-- **Ranking is competition ranking on `(net, total_votes)`** — ties share a rank
-  and the next rank skips (1, 1, 3, 4). `nickname` breaks display order only,
-  never the rank number. The live board computes this client-side in
-  `src/lib/ranking.ts` using the same rules as `close_current_week()`; if you
-  change one, change both.
+- **Ranking is competition ranking on `(net, total_votes)`, `total_votes`
+  ASCENDING** — ties share a rank and the next rank skips (1, 1, 3, 4).
+  `nickname` breaks display order only, never the rank number. At a tied net a
+  clean sheet wins: `4/0` outranks `5/1`. Ascending `total_votes` *is* ascending
+  downvotes, since `total = net + 2·down` when `net` is fixed. The rule lives in
+  **three** places and they must agree — `src/lib/ranking.ts`,
+  `close_current_week()` and `admin_update_result()` (both redefined in
+  `20260817000200_ranking_tiebreak.sql`). Change one, change all three.
+  Weeks closed before that migration keep their old ranks: closed weeks are
+  immutable (rule 3).
 - **`cast_vote` resolves the open week server-side.** Never send a client
   `week_id` for a write.
 
