@@ -131,11 +131,16 @@ export function AppShell() {
                     },
                   }}
                 />
-                {/* <Typography
-                  sx={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', color: 'primary.light' }}
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                    color: "primary.light",
+                  }}
                 >
-                  {ka.week.open}
-                </Typography> */}
+                  Live
+                </Typography>
               </Box>
             )}
           </Toolbar>

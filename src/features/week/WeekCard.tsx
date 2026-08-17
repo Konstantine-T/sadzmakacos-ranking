@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
-import { WeekCountdown } from './WeekCountdown';
-import { TurnoutBar } from './TurnoutBar';
-import { formatDay } from '@/lib/time';
-import { ka } from '@/i18n/ka';
-import type { Week } from '@/lib/database.types';
+import { useEffect, useState } from "react";
+import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
+import { WeekCountdown } from "./WeekCountdown";
+import { formatDay } from "@/lib/time";
+import { ka } from "@/i18n/ka";
+import type { Week } from "@/lib/database.types";
 
 interface WeekCardProps {
   week: Week;
@@ -38,30 +37,45 @@ export function WeekCard({ week, voters, total, onExpire }: WeekCardProps) {
   }, []);
 
   return (
-    <Paper sx={{ borderRadius: 4, overflow: 'hidden' }}>
-      <Box sx={{ height: 2, bgcolor: 'surface2' }}>
+    <Paper sx={{ borderRadius: 4, overflow: "hidden" }}>
+      <Box sx={{ height: 2, bgcolor: "surface2" }}>
         <Box
           sx={{
-            height: '100%',
+            height: "100%",
             width: `${elapsedPct(week, now)}%`,
             background: (t) =>
               `linear-gradient(90deg, rgba(247,55,24,0.25), ${t.palette.primary.main})`,
-            transition: 'width .6s linear',
+            transition: "width .6s linear",
           }}
         />
       </Box>
 
       <Stack spacing={1.75} sx={{ p: 2 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1.5}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="flex-start"
+          spacing={1.5}
+        >
           <Stack spacing="3px">
             <Typography variant="caption" color="text.secondary">
               {ka.week.current}
             </Typography>
-            <Typography variant="h3" sx={{ fontFamily: (t) => t.typography.h1.fontFamily }}>
-              {ka.week.range(formatDay(week.starts_at), formatDay(week.ends_at))}
+            <Typography
+              variant="h3"
+              sx={{ fontFamily: (t) => t.typography.h1.fontFamily }}
+            >
+              {ka.week.range(
+                formatDay(week.starts_at),
+                formatDay(week.ends_at),
+              )}
             </Typography>
           </Stack>
-          <Typography variant="caption" color="text.secondary" sx={{ pt: '3px' }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ pt: "3px" }}
+          >
             {ka.week.endsIn}
           </Typography>
         </Stack>
@@ -73,8 +87,6 @@ export function WeekCard({ week, voters, total, onExpire }: WeekCardProps) {
             {ka.week.paused}
           </Alert>
         )}
-
-        <TurnoutBar voters={voters} total={total} />
       </Stack>
     </Paper>
   );
