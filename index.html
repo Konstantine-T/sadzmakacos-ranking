@@ -6,6 +6,29 @@
     <meta name="theme-color" content="#14100F" />
     <meta name="description" content="საძმაკაცოს რანკი — კვირის რანკინგი" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- The only place in the app that needs an absolute URL: link previews
+         cannot resolve relative paths, so these carry the domain literally. If
+         the domain ever changes, this block and Supabase's URL Configuration
+         are the two things to update. -->
+    <!-- www, not the apex: Vercel serves www as the production domain and
+         308-redirects rankbros.ge to it, so this is the origin the app actually
+         runs on. If that is ever flipped, change these two and Supabase's Site
+         URL together. -->
+    <link rel="canonical" href="https://www.rankbros.ge/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.rankbros.ge/" />
+    <meta property="og:site_name" content="საძმაკაცოს რანკი" />
+    <meta property="og:title" content="საძმაკაცოს რანკი" />
+    <meta property="og:description" content="კვირის რანკინგი ჩვენთვის, ჩვენს შორის." />
+    <meta property="og:locale" content="ka_GE" />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Added to the home screen it should open like an app, not a tab. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="რანკი" />
+
     <title>საძმაკაცოს რანკი</title>
   </head>
   <body>

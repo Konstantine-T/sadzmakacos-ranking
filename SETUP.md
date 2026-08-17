@@ -88,13 +88,25 @@ You need a Google OAuth client:
    `https://<project-ref>.supabase.co/auth/v1/callback`.
 3. Copy the client ID and secret back into Supabase.
 
+Note that this redirect URI points at **Supabase**, not at the app. Google always
+hands the user back to Supabase, which then forwards them to whatever origin the
+app asked for. That is why adding a new domain later needs no change in Google
+Cloud at all — only in Supabase.
+
 Then **Authentication → URL Configuration**:
 
-- **Site URL**: `http://localhost:5173` for now; change it to your Vercel domain
-  after step 8.
-- **Redirect URLs**: add both
-  - `http://localhost:5173`
-  - `https://<your-vercel-domain>` (add it now if you know it)
+- **Site URL**: `https://www.rankbros.ge` — the production origin. The apex
+  308-redirects to it, so `window.location.origin` is always the `www` form.
+- **Redirect URLs**: add all of
+  - `https://www.rankbros.ge` and `https://www.rankbros.ge/**`
+  - `https://rankbros.ge` and `https://rankbros.ge/**` — harmless, and keeps
+    sign-in working if the apex is ever promoted to primary
+  - `http://localhost:5173` and `http://localhost:5173/**` — local dev
+  - `https://*.vercel.app/**` — otherwise sign-in breaks on preview deploys
+
+The app calls `signInWithOAuth` with `redirectTo: window.location.origin`
+(`src/app/providers/AuthProvider.tsx`), so it works on any origin in that list
+without a rebuild. There is no hardcoded domain anywhere in `src/`.
 
 There is no email confirmation to configure — rule 6 — Google only.
 
@@ -172,15 +184,34 @@ app within 15 seconds.
 1. Push the repo to GitHub, then **Vercel → Add New → Project → Import**.
 2. Framework preset: **Vite** (auto-detected). `vercel.json` already sets the
    SPA rewrite, so deep links like `/weeks/3` won't 404.
-3. **Environment Variables** — add both:
+3. **Environment Variables** — add both, for Production *and* Preview:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+
+   These are baked in at build time by Vite, so adding them after a deploy
+   means redeploying before they take effect.
 4. Deploy.
-5. Go back to Supabase → **Authentication → URL Configuration** and set the
-   **Site URL** to your Vercel domain, keeping `http://localhost:5173` in the
-   redirect list so local dev still works.
-6. Add the Vercel domain to the Google OAuth client's authorised origins if
-   Google complains on first sign-in.
+
+### The domain: rankbros.ge
+
+5. **Vercel → project → Settings → Domains → Add** `rankbros.ge`, then add
+   `www.rankbros.ge` and set it to redirect to the apex. Vercel then shows the
+   exact DNS records it wants.
+6. At the `.ge` registrar, either:
+   - **delegate**: set the domain's nameservers to `ns1.vercel-dns.com` and
+     `ns2.vercel-dns.com` and let Vercel hold the zone; or
+   - **keep the zone**: add an `A` record for the apex pointing at the IP Vercel
+     shows you, and a `CNAME` for `www` → `cname.vercel-dns.com`.
+
+   Use the values from Vercel's own panel rather than any written here — Vercel
+   has changed its apex IP before, and a stale one fails validation silently.
+7. Wait for the domain to verify and the certificate to issue (automatic). `.ge`
+   delegation can take a few hours to propagate.
+8. Supabase → **Authentication → URL Configuration**: **Site URL** =
+   `https://rankbros.ge`, and make sure the redirect list from step 4 above is
+   in place. This is the only place the new domain has to be registered.
+
+   Nothing changes in Google Cloud — see the note in step 4.
 
 ---
 

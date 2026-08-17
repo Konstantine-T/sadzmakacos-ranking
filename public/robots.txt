@@ -1,0 +1,5 @@
+# rankbros.ge is a closed group of ~20 friends, not a public site. The login
+# wall keeps the data private either way, but there is no reason for the sign-in
+# page to sit in anybody's search results.
+User-agent: *
+Disallow: /
