@@ -61,5 +61,6 @@ applied one. See [SETUP.md](SETUP.md) for how to apply them.
 
 Email or push notifications · categories or multiple ranking dimensions ·
 images in posts · multiple friend groups · multiple admins · vote reasons ·
-seasons/resets · comments on closed weeks · editing or deleting your own post ·
-public sharing outside the group.
+seasons/resets · **comments of any kind** (the feature was dropped in
+`20260817000100_drop_comments.sql` — posts carry the conversation) · editing or
+deleting your own post · public sharing outside the group.

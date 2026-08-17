@@ -5,7 +5,6 @@ import { memberKeys } from '@/features/members/api';
 import { weekKeys } from '@/features/week/api';
 import { standingsKeys } from '@/features/standings/api';
 import { postKeys } from '@/features/posts/api';
-import { commentKeys } from '@/features/comments/api';
 
 /**
  * Every mutation here is a security-definer RPC that writes to audit_log before
@@ -30,7 +29,6 @@ export interface DashboardStats {
   total_members: number;
   votes_cast: number;
   posts: number;
-  comments: number;
   pending: number;
   unlinked: number;
 }
@@ -187,13 +185,6 @@ export function useAdminDeletePost(weekId: number | undefined) {
     const { error } = await supabase.rpc('admin_delete_post', { p_post_id: postId });
     if (error) throw error;
   }, [postKeys.list(weekId), postKeys.scores(weekId)]);
-}
-
-export function useAdminDeleteComment(weekId: number | undefined) {
-  return useAdminMutation(async (commentId: string) => {
-    const { error } = await supabase.rpc('admin_delete_comment', { p_comment_id: commentId });
-    if (error) throw error;
-  }, [commentKeys.list(weekId)]);
 }
 
 export function useVoidVote(weekId: number | undefined) {

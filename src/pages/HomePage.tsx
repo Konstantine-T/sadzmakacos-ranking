@@ -58,10 +58,10 @@ function AllTimeDetail({ row }: { row: AllTimeRow }) {
 /**
  * The board (§1.1–1.3) and nothing else.
  *
- * Posts and their comment thread used to be stacked underneath, which meant the
- * screen you open twenty times a day scrolled past the scoreboard into two
- * other features. They live on the posts tab now; this page is the week, the
- * ranking, and the way in to either scope.
+ * Posts used to be stacked underneath, which meant the screen you open twenty
+ * times a day scrolled past the scoreboard into another feature. They live on
+ * the posts tab now; this page is the week, the ranking, and the way in to
+ * either scope.
  */
 export function HomePage() {
   const { member } = useAuth();

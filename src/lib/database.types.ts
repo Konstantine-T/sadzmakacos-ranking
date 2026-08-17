@@ -112,20 +112,6 @@ export interface Database {
         Update: { value?: -1 | 1 };
         Relationships: [];
       };
-      comments: {
-        Row: {
-          id: string;
-          week_id: number;
-          author_id: string;
-          body: string;
-          created_at: string;
-          updated_at: string;
-          deleted_at: string | null;
-        };
-        Insert: { week_id: number; author_id: string; body: string };
-        Update: { body?: string; deleted_at?: string | null };
-        Relationships: [];
-      };
       member_reactions: {
         Row: {
           week_id: number;
@@ -275,7 +261,6 @@ export interface Database {
       toggle_member_reaction: { Args: { p_member_id: string; p_emoji: string }; Returns: boolean };
       toggle_post_reaction: { Args: { p_post_id: string; p_emoji: string }; Returns: boolean };
       create_post: { Args: { p_body: string }; Returns: string };
-      create_comment: { Args: { p_body: string }; Returns: string };
 
       admin_link_account: {
         Args: { p_auth_user_id: string; p_member_id: string };
@@ -298,7 +283,6 @@ export interface Database {
       };
       admin_unlink_member: { Args: { p_member_id: string }; Returns: undefined };
       admin_delete_post: { Args: { p_post_id: string }; Returns: undefined };
-      admin_delete_comment: { Args: { p_comment_id: string }; Returns: undefined };
       admin_void_vote: {
         Args: { p_week_id: number; p_voter_id: string; p_target_id: string };
         Returns: undefined;
@@ -341,7 +325,6 @@ export type Views<T extends keyof Database['public']['Views']> =
 export type Member = Tables<'members'>;
 export type Week = Tables<'weeks'>;
 export type Post = Tables<'posts'>;
-export type Comment = Tables<'comments'>;
 export type MemberBadge = Tables<'member_badges'>;
 export type Announcement = Tables<'announcements'>;
 export type AuditEntry = Tables<'audit_log'>;

@@ -217,9 +217,9 @@ A clean run prints only `PASS` lines. Any `FAIL` aborts the transaction.
 `supabase/tests/rpc_smoke.sql` is the companion: it drives the member-facing
 RPCs as a signed-in member and asserts the observable effects — a vote moves
 the aggregate, switching sides is a two-point swing, `vote_events` fires,
-`create_post` is one-shot, reactions toggle, comments soft-delete and cannot be
-resurrected, `close_current_week()` no-ops before the buzzer, and ranks skip
-correctly after a tie. It also ends in `ROLLBACK`.
+`create_post` is one-shot, reactions toggle, `close_current_week()` no-ops
+before the buzzer, and ranks skip correctly after a tie. It also ends in
+`ROLLBACK`.
 
 ### Running it without a Supabase project
 

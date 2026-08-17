@@ -136,31 +136,8 @@ begin
   raise notice 'PASS: post reactions toggle on and off, counts follow';
 end $$;
 
--- ============================ COMMENTS ======================================
-do $$
-declare v_id uuid;
-begin
-  v_id := public.create_comment('სატესტო კომენტარი');
-
-  update public.comments set body = 'შესწორებული' where id = v_id;
-  if (select body from public.comments where id = v_id) <> 'შესწორებული' then
-    raise exception 'FAIL: could not edit own comment';
-  end if;
-  raise notice 'PASS: own comment is editable while the week is open';
-
-  update public.comments set deleted_at = now() where id = v_id;
-  if (select deleted_at from public.comments where id = v_id) is null then
-    raise exception 'FAIL: soft delete did not take';
-  end if;
-  raise notice 'PASS: own comment soft-deletes';
-
-  -- and cannot be resurrected
-  update public.comments set deleted_at = null where id = v_id;
-  if (select deleted_at from public.comments where id = v_id) is null then
-    raise exception 'FAIL: a deleted comment was un-deleted';
-  end if;
-  raise notice 'PASS: a soft-deleted comment cannot be un-deleted';
-end $$;
+-- Comments were dropped in 20260817000100_drop_comments.sql; the table, both
+-- RPCs and their tests went with the feature.
 
 -- ============================ MEMBER REACTIONS ==============================
 do $$

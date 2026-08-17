@@ -3,11 +3,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { standingsKeys } from '@/features/standings/api';
 import { postKeys } from '@/features/posts/api';
-import { commentKeys } from '@/features/comments/api';
 import { reactionKeys } from '@/features/reactions/api';
 import { weekKeys } from '@/features/week/api';
 
-type Signal = 'votes' | 'post_vote' | 'post_reaction' | 'member_reaction' | 'posts' | 'comments' | 'weeks';
+type Signal = 'votes' | 'post_vote' | 'post_reaction' | 'member_reaction' | 'posts' | 'weeks';
 
 const DEBOUNCE_MS = 400;
 
@@ -51,9 +50,6 @@ export function useRealtime(weekId: number | undefined) {
         queryClient.invalidateQueries({ queryKey: postKeys.list(weekId) });
         queryClient.invalidateQueries({ queryKey: postKeys.scores(weekId) });
       }
-      if (signals.has('comments')) {
-        queryClient.invalidateQueries({ queryKey: commentKeys.list(weekId) });
-      }
       if (signals.has('weeks')) {
         // A week just closed or was adjusted — everything is suspect.
         queryClient.invalidateQueries({ queryKey: weekKeys.open });
@@ -86,9 +82,6 @@ export function useRealtime(weekId: number | undefined) {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () =>
         schedule('posts'),
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, () =>
-        schedule('comments'),
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'weeks' }, () =>
         schedule('weeks'),

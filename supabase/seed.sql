@@ -47,13 +47,6 @@ declare
     'დღეს კარგი დღეა. ხვალ ვნახოთ.',
     'ერთი კვირა კიდევ და ტახტი ჩემია.'
   ];
-  v_comments text[] := array[
-    'ეს კვირა სასაცილო იყო.','ვინც მინუსი დამიდო, ღმერთმა აპატიოს.',
-    'ლაშა როგორ არის მეორე ადგილზე?','ხვალ ყველაფერი შეიცვლება.',
-    'მე არაფერს ვამბობ.','ზურას ხმა არავის მიუცია, სამწუხაროა.',
-    'პირველი ადგილი დამსახურებულია.','ამაზე მოგვიანებით ვისაუბროთ.',
-    'ვინც წაიკითხა, ხმა მომეცი.','საღამოს ვნახოთ ვინ იმარჯვებს.'
-  ];
   v_ids       uuid[];
   v_member_id uuid;
   v_week    int;
@@ -79,7 +72,6 @@ begin
   delete from public.post_reactions;
   delete from public.member_reactions;
   delete from public.post_votes;
-  delete from public.comments;
   delete from public.posts;
   delete from public.votes;
   delete from public.announcements;
@@ -199,15 +191,6 @@ begin
       v_post_id := null;
     end loop;
 
-    -- ---- comments ----
-    for j in 1..8 loop
-      insert into public.comments (week_id, author_id, body, created_at)
-      values (v_week, v_ids[((wk * 5 + j * 3) % 20) + 1],
-              v_comments[((wk + j) % 10) + 1],
-              (select starts_at from public.weeks where id = v_week)
-                + (j * interval '6 hours'));
-    end loop;
-
     -- ---- member reactions ----
     for t in 1..20 loop
       for j in 1..((t + wk) % 4) loop
@@ -259,11 +242,6 @@ begin
       on conflict do nothing;
     end loop;
     v_post_id := null;
-  end loop;
-
-  for j in 1..5 loop
-    insert into public.comments (week_id, author_id, body)
-    values (v_week, v_ids[j * 4], v_comments[j]);
   end loop;
 
   insert into public.announcements (body)

@@ -4,15 +4,14 @@ import DeleteIcon from '@mui/icons-material/DeleteOutlineRounded';
 import { useToast } from '@/app/providers/ToastProvider';
 import { EmptyState } from '@/components/Splash';
 import { WeekSelect } from './WeekSelect';
-import { useAdminDeleteComment, useAdminDeletePost } from '@/features/admin/api';
+import { useAdminDeletePost } from '@/features/admin/api';
 import { useScoredPosts } from '@/features/posts/api';
-import { useComments } from '@/features/comments/api';
 import { useMemberMap } from '@/features/members/api';
 import { useOpenWeek } from '@/features/week/api';
 import { formatDateTime } from '@/lib/time';
 import { ka } from '@/i18n/ka';
 
-/** Delete any post or comment. Both actions land in audit_log with the body. */
+/** Delete any post. The action lands in audit_log with the body. */
 export function AdminModeration() {
   const { toastError } = useToast();
   const openWeek = useOpenWeek();
@@ -20,10 +19,8 @@ export function AdminModeration() {
   const effectiveWeek = weekId ?? openWeek.data?.id;
 
   const posts = useScoredPosts(effectiveWeek);
-  const comments = useComments(effectiveWeek);
   const { map: members } = useMemberMap();
   const deletePost = useAdminDeletePost(effectiveWeek);
-  const deleteComment = useAdminDeleteComment(effectiveWeek);
 
   const row = (
     key: string,
@@ -80,27 +77,6 @@ export function AdminModeration() {
               post.body,
               post.created_at,
               () => deletePost.mutate(post.id, { onError: toastError }),
-            ),
-          )
-        )}
-      </Paper>
-
-      <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-        <Typography variant="h3" sx={{ p: 2, pb: 1 }}>
-          {ka.comments.title}
-        </Typography>
-        <Divider />
-        {(comments.data ?? []).length === 0 ? (
-          <EmptyState text={ka.comments.empty} />
-        ) : (
-          (comments.data ?? []).map((comment) =>
-            row(
-              comment.id,
-              members.get(comment.author_id)?.nickname ?? '—',
-              comment.deleted_at ? ka.comments.deleted : comment.body,
-              comment.created_at,
-              () => deleteComment.mutate(comment.id, { onError: toastError }),
-              Boolean(comment.deleted_at),
             ),
           )
         )}

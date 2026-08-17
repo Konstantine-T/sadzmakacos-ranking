@@ -1,6 +1,5 @@
 import { useParams } from 'react-router-dom';
 import { Alert, Box, Chip, Divider, Paper, Stack, Typography } from '@mui/material';
-import { useAuth } from '@/app/providers/AuthProvider';
 import { PageTransition } from '@/components/PageTransition';
 import { EmptyState, Splash } from '@/components/Splash';
 import { NotFoundPage } from './NotFoundPage';
@@ -9,8 +8,6 @@ import { useWeekStandings } from '@/features/standings/api';
 import { StandingsList } from '@/features/standings/StandingsList';
 import { PostCard } from '@/features/posts/PostCard';
 import { useScoredPosts } from '@/features/posts/api';
-import { CommentThread } from '@/features/comments/CommentThread';
-import { useComments } from '@/features/comments/api';
 import { useMemberMap } from '@/features/members/api';
 import { usePostReactionCounts } from '@/features/reactions/api';
 import { formatDay } from '@/lib/time';
@@ -19,19 +16,17 @@ import { ka } from '@/i18n/ka';
 /**
  * A frozen week (rule 3). Everything here is read from the snapshot in
  * weekly_results — nothing is recomputed from votes, and nothing is editable:
- * the comment thread is locked and the ranking rows carry no vote buttons or
- * reactions (ranking reactions are current-week only, §1.6).
+ * the ranking rows carry no vote buttons or reactions (ranking reactions are
+ * current-week only, §1.6).
  */
 export function WeekPage() {
   const { id } = useParams<{ id: string }>();
   const weekId = Number(id);
   const valid = Number.isFinite(weekId);
 
-  const { member } = useAuth();
   const weekQuery = useWeek(valid ? weekId : undefined);
   const standings = useWeekStandings(valid ? weekId : undefined);
   const posts = useScoredPosts(valid ? weekId : undefined);
-  const comments = useComments(valid ? weekId : undefined);
   const { map: members } = useMemberMap();
   const postReactions = usePostReactionCounts(valid ? weekId : undefined);
 
@@ -107,22 +102,6 @@ export function WeekPage() {
                 reactionCounts={postReactions.counts.get(post.id)}
               />
             ))
-          )}
-        </Stack>
-
-        <Stack spacing={1} sx={{ px: 2 }}>
-          <Typography variant="h2">{ka.comments.title}</Typography>
-          {member && (
-            <CommentThread
-              comments={comments.data ?? []}
-              members={members}
-              myId={member.id}
-              isAdmin={member.isAdmin}
-              locked
-              onCreate={() => {}}
-              onEdit={() => {}}
-              onDelete={() => {}}
-            />
           )}
         </Stack>
       </Stack>

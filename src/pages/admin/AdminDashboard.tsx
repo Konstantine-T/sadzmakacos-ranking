@@ -44,7 +44,6 @@ export function AdminDashboard() {
         <Tile value={stats.votes_cast} label={ka.admin.stats.votesCast} />
         <Tile value={timeLeft} label={ka.admin.stats.timeLeft} />
         <Tile value={stats.posts} label={ka.admin.stats.posts} />
-        <Tile value={stats.comments} label={ka.admin.stats.comments} />
         <Tile value={stats.pending} label={ka.admin.stats.pending} warn={stats.pending > 0} />
         <Tile value={stats.unlinked} label={ka.admin.stats.unlinked} warn={stats.unlinked > 0} />
       </Box>
