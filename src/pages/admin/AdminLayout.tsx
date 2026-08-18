@@ -12,6 +12,7 @@ const TABS = [
   { to: '/admin/moderation', label: ka.admin.moderation },
   { to: '/admin/results', label: ka.admin.results },
   { to: '/admin/announcements', label: ka.admin.announcements },
+  { to: '/admin/polls', label: ka.admin.polls },
   { to: '/admin/audit', label: ka.admin.audit },
 ];
 

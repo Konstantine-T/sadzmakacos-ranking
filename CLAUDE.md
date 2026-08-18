@@ -9,6 +9,11 @@ Full spec: [sadzmakatsos-ranki-plan.md](sadzmakatsos-ranki-plan.md).
    may ever resolve *who* voted for whom. Enforced in Postgres (RLS +
    aggregate-only views), never in the frontend. Getting this wrong breaks the
    whole social contract of the app. Same contract applies to reactions.
+   **The one exception is polls**, whose answers are deliberately signed — a
+   poll asks about the app, not about a person, so `poll_answers` has no
+   aggregate view, is readable in full by every member, and is published to
+   realtime. The poll UI states this on the card. Do not copy that pattern to
+   anything that judges a member.
 2. **Live totals are public all week.** Up count, down count and net are visible
    to every member in real time. Only voter identity is hidden.
 3. **Past weeks are immutable snapshots.** Closed weeks are read from

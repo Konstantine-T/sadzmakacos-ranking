@@ -165,6 +165,32 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      polls: {
+        Row: {
+          id: string;
+          question: string;
+          is_multi: boolean;
+          is_active: boolean;
+          created_at: string;
+          closed_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      poll_options: {
+        Row: { id: string; poll_id: string; label: string; position: number };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      /** Signed on purpose — see 20260818000100_polls.sql. */
+      poll_answers: {
+        Row: { poll_id: string; option_id: string; member_id: string; created_at: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       audit_log: {
         Row: {
           id: number;
@@ -298,6 +324,18 @@ export interface Database {
       };
       admin_create_announcement: { Args: { p_body: string }; Returns: string };
       admin_set_announcement: { Args: { p_id: string; p_is_active: boolean }; Returns: undefined };
+
+      answer_poll: { Args: { p_poll_id: string; p_option_ids: string[] }; Returns: undefined };
+      admin_create_poll: {
+        Args: { p_question: string; p_options: string[]; p_is_multi?: boolean };
+        Returns: string;
+      };
+      admin_set_poll: {
+        Args: { p_poll_id: string; p_is_active?: boolean | null; p_closed?: boolean | null };
+        Returns: undefined;
+      };
+      admin_delete_poll: { Args: { p_poll_id: string }; Returns: undefined };
+      admin_list_polls: { Args: Record<string, never>; Returns: Json };
       admin_vote_matrix: {
         Args: { p_week_id: number };
         Returns: {
@@ -327,6 +365,9 @@ export type Week = Tables<'weeks'>;
 export type Post = Tables<'posts'>;
 export type MemberBadge = Tables<'member_badges'>;
 export type Announcement = Tables<'announcements'>;
+export type Poll = Tables<'polls'>;
+export type PollOption = Tables<'poll_options'>;
+export type PollAnswer = Tables<'poll_answers'>;
 export type AuditEntry = Tables<'audit_log'>;
 export type WeeklyResult = Tables<'weekly_results'>;
 export type PendingAccount = Tables<'pending_accounts'>;

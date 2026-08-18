@@ -5,6 +5,7 @@ import { memberKeys } from '@/features/members/api';
 import { weekKeys } from '@/features/week/api';
 import { standingsKeys } from '@/features/standings/api';
 import { postKeys } from '@/features/posts/api';
+import { pollKeys } from '@/features/polls/api';
 
 /**
  * Every mutation here is a security-definer RPC that writes to audit_log before
@@ -19,7 +20,20 @@ export const adminKeys = {
   matrix: (weekId: number) => ['admin', 'matrix', weekId] as const,
   audit: ['admin', 'audit'] as const,
   announcements: ['admin', 'announcements'] as const,
+  polls: ['admin', 'polls'] as const,
 };
+
+/** One row of admin_list_polls(), including polls hidden from members. */
+export interface AdminPoll {
+  id: string;
+  question: string;
+  is_multi: boolean;
+  is_active: boolean;
+  created_at: string;
+  closed_at: string | null;
+  answered_by: number;
+  options: { id: string; label: string; position: number; count: number }[];
+}
 
 export interface DashboardStats {
   week_id: number | null;
@@ -259,6 +273,73 @@ export function useSetAnnouncement() {
     },
     [adminKeys.announcements, weekKeys.announcements],
   );
+}
+
+/**
+ * Every poll including the hidden ones. RLS deliberately cannot see an inactive
+ * poll, so this RPC is the only door to one.
+ */
+export function useAdminPolls() {
+  return useQuery({
+    queryKey: adminKeys.polls,
+    staleTime: 30_000,
+    queryFn: async (): Promise<AdminPoll[]> => {
+      const { data, error } = await supabase.rpc('admin_list_polls');
+      if (error) throw error;
+      return (data as unknown as AdminPoll[]) ?? [];
+    },
+  });
+}
+
+export function useCreatePoll() {
+  return useAdminMutation(
+    async ({
+      question,
+      options,
+      isMulti,
+    }: {
+      question: string;
+      options: string[];
+      isMulti: boolean;
+    }) => {
+      const { error } = await supabase.rpc('admin_create_poll', {
+        p_question: question,
+        p_options: options,
+        p_is_multi: isMulti,
+      });
+      if (error) throw error;
+    },
+    [adminKeys.polls, pollKeys.active],
+  );
+}
+
+export function useSetPoll() {
+  return useAdminMutation(
+    async ({
+      pollId,
+      isActive,
+      closed,
+    }: {
+      pollId: string;
+      isActive?: boolean;
+      closed?: boolean;
+    }) => {
+      const { error } = await supabase.rpc('admin_set_poll', {
+        p_poll_id: pollId,
+        p_is_active: isActive ?? null,
+        p_closed: closed ?? null,
+      });
+      if (error) throw error;
+    },
+    [adminKeys.polls, pollKeys.active],
+  );
+}
+
+export function useDeletePoll() {
+  return useAdminMutation(async (pollId: string) => {
+    const { error } = await supabase.rpc('admin_delete_poll', { p_poll_id: pollId });
+    if (error) throw error;
+  }, [adminKeys.polls, pollKeys.active]);
 }
 
 export function useAuditLog() {

@@ -16,7 +16,9 @@ import { useCastVote, useMyVotes, useRankedStandings } from '@/features/standing
 import { useRankedAllTime, type AllTimeSort } from '@/features/allTime/api';
 import { SortPicker } from '@/features/allTime/SortPicker';
 import { BadgeShelf } from '@/features/profile/BadgeShelf';
-import { useAllBadges } from '@/features/members/api';
+import { PollCard } from '@/features/polls/PollCard';
+import { useActivePolls, useAnswerPoll } from '@/features/polls/api';
+import { useAllBadges, useMemberMap } from '@/features/members/api';
 import {
   useMemberReactionCounts,
   useMyMemberReactions,
@@ -94,6 +96,10 @@ export function HomePage() {
   const allTime = useRankedAllTime(sort);
   const badges = useAllBadges();
 
+  const { map: members } = useMemberMap();
+  const { polls } = useActivePolls(member?.id);
+  const answerPoll = useAnswerPoll();
+
   if (weekQuery.isPending) return <Splash />;
 
   if (!week) {
@@ -130,6 +136,21 @@ export function HomePage() {
             <Alert key={announcement.id} severity="info" sx={{ borderRadius: '12px' }}>
               {announcement.body}
             </Alert>
+          ))}
+
+          {/* Same slot as announcements: a transient admin broadcast, above the
+              week because it wants answering today. Renders nothing when there
+              is no active poll. */}
+          {polls.map((poll) => (
+            <PollCard
+              key={poll.id}
+              poll={poll}
+              members={members}
+              totalMembers={turnout.data?.total_members ?? members.size}
+              onAnswer={(optionIds) =>
+                answerPoll.mutate({ pollId: poll.id, optionIds }, { onError: toastError })
+              }
+            />
           ))}
 
           {wide ? (

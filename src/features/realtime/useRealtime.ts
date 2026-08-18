@@ -4,9 +4,17 @@ import { supabase } from '@/lib/supabase';
 import { standingsKeys } from '@/features/standings/api';
 import { postKeys } from '@/features/posts/api';
 import { reactionKeys } from '@/features/reactions/api';
+import { pollKeys } from '@/features/polls/api';
 import { weekKeys } from '@/features/week/api';
 
-type Signal = 'votes' | 'post_vote' | 'post_reaction' | 'member_reaction' | 'posts' | 'weeks';
+type Signal =
+  | 'votes'
+  | 'post_vote'
+  | 'post_reaction'
+  | 'member_reaction'
+  | 'posts'
+  | 'polls'
+  | 'weeks';
 
 const DEBOUNCE_MS = 400;
 
@@ -50,6 +58,9 @@ export function useRealtime(weekId: number | undefined) {
         queryClient.invalidateQueries({ queryKey: postKeys.list(weekId) });
         queryClient.invalidateQueries({ queryKey: postKeys.scores(weekId) });
       }
+      if (signals.has('polls')) {
+        queryClient.invalidateQueries({ queryKey: pollKeys.active });
+      }
       if (signals.has('weeks')) {
         // A week just closed or was adjusted — everything is suspect.
         queryClient.invalidateQueries({ queryKey: weekKeys.open });
@@ -82,6 +93,14 @@ export function useRealtime(weekId: number | undefined) {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () =>
         schedule('posts'),
+      )
+      // Safe to subscribe to directly, unlike `votes`: poll answers are signed,
+      // so the stream carries nothing the UI does not already show.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_answers' }, () =>
+        schedule('polls'),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () =>
+        schedule('polls'),
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'weeks' }, () =>
         schedule('weeks'),

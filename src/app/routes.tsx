@@ -21,6 +21,7 @@ import { AdminWeek } from '@/pages/admin/AdminWeek';
 import { AdminModeration } from '@/pages/admin/AdminModeration';
 import { AdminResults } from '@/pages/admin/AdminResults';
 import { AdminAnnouncements } from '@/pages/admin/AdminAnnouncements';
+import { AdminPolls } from '@/pages/admin/AdminPolls';
 import { AdminAudit } from '@/pages/admin/AdminAudit';
 
 export function AppRoutes() {
@@ -63,6 +64,7 @@ export function AppRoutes() {
           <Route path="moderation" element={<AdminModeration />} />
           <Route path="results" element={<AdminResults />} />
           <Route path="announcements" element={<AdminAnnouncements />} />
+          <Route path="polls" element={<AdminPolls />} />
           <Route path="audit" element={<AdminAudit />} />
         </Route>
 

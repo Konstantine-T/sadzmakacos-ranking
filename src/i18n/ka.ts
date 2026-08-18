@@ -90,6 +90,18 @@ export const ka = {
     score: "ქულა",
   },
 
+  polls: {
+    title: "გამოკითხვა",
+    /** Says out loud that this is NOT secret, unlike every other vote here. */
+    signed: "პასუხები ღიაა — ყველა ხედავს ვინ რა აირჩია",
+    pickOne: "აირჩიე ერთი",
+    pickMany: "აირჩიე რამდენიც გინდა",
+    closed: "დახურულია",
+    answered: (n: number, t: number) => `${n}/${t} უპასუხა`,
+    noAnswers: "ჯერ არავის უპასუხია",
+    clear: "პასუხის გაუქმება",
+  },
+
   auth: {
     signIn: "შესვლა Google-ით",
     signOut: "გასვლა",
@@ -163,6 +175,7 @@ export const ka = {
     moderation: "მოდერაცია",
     results: "შედეგები",
     announcements: "განცხადებები",
+    polls: "გამოკითხვა",
     audit: "ისტორია",
 
     pendingAccounts: "დასადასტურებელი ანგარიშები",
@@ -203,6 +216,18 @@ export const ka = {
     publish: "გამოქვეყნება",
     hide: "დამალვა",
     show: "ჩვენება",
+
+    pollQuestion: "კითხვა",
+    pollOptions: "პასუხები — თითო ხაზზე ერთი",
+    pollMulti: "რამდენიმე პასუხის არჩევა შეიძლება",
+    pollCreate: "გამოკითხვის შექმნა",
+    pollClose: "დახურვა",
+    pollReopen: "ხელახლა გახსნა",
+    pollDelete: "გამოკითხვის წაშლა",
+    pollNone: "გამოკითხვა ჯერ არ შეგიქმნია.",
+    pollOptionsHint: "მინიმუმ 2, მაქსიმუმ 10",
+    /** Options cannot change once answers exist — same one-shot rule as posts. */
+    pollOnceWarning: "შექმნის შემდეგ პასუხების შეცვლა აღარ შეიძლება.",
 
     actor: "ვინ",
     action: "რა",
@@ -247,6 +272,10 @@ export const ka = {
     tooLong: "ტექსტი ძალიან გრძელია.",
     empty: "ცარიელია.",
     avatarTooBig: "სურათი ძალიან დიდია (მაქს. 2MB).",
+    pollClosed: "გამოკითხვა დახურულია.",
+    pollSingleChoice: "აქ მხოლოდ ერთი პასუხის არჩევა შეიძლება.",
+    pollTooFewOptions: "მინიმუმ ორი პასუხი უნდა იყოს.",
+    pollTooManyOptions: "მაქსიმუმ ათი პასუხი შეიძლება.",
   },
 } as const;
 
@@ -260,6 +289,10 @@ export function errorToKa(message: string | undefined): string {
   if (message.includes("forbidden") || message.includes("not_a_member"))
     return ka.errors.forbidden;
   if (message.includes("empty_body")) return ka.errors.empty;
+  if (message.includes("poll_closed")) return ka.errors.pollClosed;
+  if (message.includes("single_choice_only")) return ka.errors.pollSingleChoice;
+  if (message.includes("too_few_options")) return ka.errors.pollTooFewOptions;
+  if (message.includes("too_many_options")) return ka.errors.pollTooManyOptions;
   if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
     return ka.errors.offline;
   }
