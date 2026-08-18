@@ -170,7 +170,6 @@ export const ka = {
     dashboard: "მთავარი",
     accounts: "ანგარიშები",
     members: "წევრები",
-    votes: "ხმების მატრიცა",
     week: "კვირის მართვა",
     moderation: "მოდერაცია",
     results: "შედეგები",
@@ -195,10 +194,6 @@ export const ka = {
     linked: "დაკავშირებული",
     notLinked: "არ არის დაკავშირებული",
 
-    voter: "ვინ",
-    target: "ვის",
-    noVotes: "ამ კვირას ხმა არ მიუციათ.",
-
     endsAt: "დასრულების დრო",
     pauseVoting: "ხმის მიცემის შეჩერება",
     resumeVoting: "განახლება",
@@ -207,7 +202,6 @@ export const ka = {
       "კვირა დაიხურება, შედეგები დაფიქსირდება და ახალი კვირა გაიხსნება. ეს შეუქცევადია.",
 
     deletePost: "პოსტის წაშლა",
-    voidVote: "ხმის გაუქმება",
 
     editResult: "შედეგის შესწორება",
     edited: "შესწორებული",

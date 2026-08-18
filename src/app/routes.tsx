@@ -16,7 +16,6 @@ import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { AdminAccounts } from '@/pages/admin/AdminAccounts';
 import { AdminMembers } from '@/pages/admin/AdminMembers';
-import { AdminVotes } from '@/pages/admin/AdminVotes';
 import { AdminWeek } from '@/pages/admin/AdminWeek';
 import { AdminModeration } from '@/pages/admin/AdminModeration';
 import { AdminResults } from '@/pages/admin/AdminResults';
@@ -59,7 +58,6 @@ export function AppRoutes() {
           <Route index element={<AdminDashboard />} />
           <Route path="accounts" element={<AdminAccounts />} />
           <Route path="members" element={<AdminMembers />} />
-          <Route path="votes" element={<AdminVotes />} />
           <Route path="week" element={<AdminWeek />} />
           <Route path="moderation" element={<AdminModeration />} />
           <Route path="results" element={<AdminResults />} />

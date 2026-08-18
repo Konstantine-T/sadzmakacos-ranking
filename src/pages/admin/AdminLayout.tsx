@@ -7,7 +7,6 @@ const TABS = [
   { to: '/admin', label: ka.admin.dashboard },
   { to: '/admin/accounts', label: ka.admin.accounts },
   { to: '/admin/members', label: ka.admin.members },
-  { to: '/admin/votes', label: ka.admin.votes },
   { to: '/admin/week', label: ka.admin.week },
   { to: '/admin/moderation', label: ka.admin.moderation },
   { to: '/admin/results', label: ka.admin.results },

@@ -309,10 +309,6 @@ export interface Database {
       };
       admin_unlink_member: { Args: { p_member_id: string }; Returns: undefined };
       admin_delete_post: { Args: { p_post_id: string }; Returns: undefined };
-      admin_void_vote: {
-        Args: { p_week_id: number; p_voter_id: string; p_target_id: string };
-        Returns: undefined;
-      };
       admin_set_week: {
         Args: { p_week_id: number; p_ends_at?: string | null; p_is_paused?: boolean | null };
         Returns: undefined;
@@ -336,16 +332,6 @@ export interface Database {
       };
       admin_delete_poll: { Args: { p_poll_id: string }; Returns: undefined };
       admin_list_polls: { Args: Record<string, never>; Returns: Json };
-      admin_vote_matrix: {
-        Args: { p_week_id: number };
-        Returns: {
-          voter_id: string;
-          voter_nickname: string;
-          target_id: string;
-          target_nickname: string;
-          value: number;
-        }[];
-      };
       admin_dashboard: { Args: Record<string, never>; Returns: Json };
     };
 

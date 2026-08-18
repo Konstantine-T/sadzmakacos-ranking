@@ -5,10 +5,17 @@ Full spec: [sadzmakatsos-ranki-plan.md](sadzmakatsos-ranki-plan.md).
 
 ## The seven rules (do not violate these)
 
-1. **Individual votes are secret from users, visible to admin.** No client query
-   may ever resolve *who* voted for whom. Enforced in Postgres (RLS +
+1. **Individual votes are secret from everyone, the admin included.** No query
+   by any account may resolve *who* voted for whom. Enforced in Postgres (RLS +
    aggregate-only views), never in the frontend. Getting this wrong breaks the
-   whole social contract of the app. Same contract applies to reactions.
+   whole social contract of the app. Reactions follow the same contract, except
+   that reaction identity is still admin-readable — see the note below.
+   `20260818000200_votes_anonymous_to_admin.sql` removed the three doors:
+   the `is_admin()` clause on `votes_select_own`, `admin_vote_matrix()` and
+   `admin_void_vote()`. The last was an oracle — void a guessed ballot, watch
+   the net move. **Consequence: a single vote can no longer be moderated.** An
+   admin corrects a whole closed week through `admin_update_result()`, which
+   works on aggregate counts and never sees identity.
    **The one exception is polls**, whose answers are deliberately signed — a
    poll asks about the app, not about a person, so `poll_answers` has no
    aggregate view, is readable in full by every member, and is published to

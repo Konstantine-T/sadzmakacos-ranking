@@ -17,7 +17,6 @@ import { pollKeys } from '@/features/polls/api';
 export const adminKeys = {
   dashboard: ['admin', 'dashboard'] as const,
   pending: ['admin', 'pending'] as const,
-  matrix: (weekId: number) => ['admin', 'matrix', weekId] as const,
   audit: ['admin', 'audit'] as const,
   announcements: ['admin', 'announcements'] as const,
   polls: ['admin', 'polls'] as const,
@@ -151,20 +150,6 @@ export function useUnlinkMember() {
   }, [memberKeys.all, adminKeys.pending]);
 }
 
-/** The 20×20 grid: exactly who voted for whom. Admin only, by construction. */
-export function useVoteMatrix(weekId: number | undefined) {
-  return useQuery({
-    queryKey: adminKeys.matrix(weekId ?? -1),
-    enabled: weekId !== undefined,
-    staleTime: 15_000,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('admin_vote_matrix', { p_week_id: weekId! });
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-}
-
 export function useSetWeek() {
   return useAdminMutation(
     async ({
@@ -199,20 +184,6 @@ export function useAdminDeletePost(weekId: number | undefined) {
     const { error } = await supabase.rpc('admin_delete_post', { p_post_id: postId });
     if (error) throw error;
   }, [postKeys.list(weekId), postKeys.scores(weekId)]);
-}
-
-export function useVoidVote(weekId: number | undefined) {
-  return useAdminMutation(
-    async ({ voterId, targetId }: { voterId: string; targetId: string }) => {
-      const { error } = await supabase.rpc('admin_void_vote', {
-        p_week_id: weekId!,
-        p_voter_id: voterId,
-        p_target_id: targetId,
-      });
-      if (error) throw error;
-    },
-    [adminKeys.matrix(weekId ?? -1), standingsKeys.live(weekId)],
-  );
 }
 
 export function useUpdateResult() {
