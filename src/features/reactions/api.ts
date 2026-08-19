@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 /**
  * Reactions follow the same contract as votes: counts are public, identity is
@@ -61,16 +62,26 @@ export function useMemberReactionCounts(weekId: number | undefined) {
   return { counts, ...query };
 }
 
+/**
+ * Explicit `reactor_id` filter, not RLS: `member_reactions_select_own` is
+ * `reactor_id = current_member_id() OR public.is_admin()`, so without it an
+ * admin reads everyone's reactions and every emoji renders as already-mine.
+ * See the note on useMyVotes in features/standings/api.ts.
+ */
 export function useMyMemberReactions(weekId: number | undefined) {
+  const { member } = useAuth();
+  const memberId = member?.id;
+
   const query = useQuery({
     queryKey: reactionKeys.myMember(weekId),
-    enabled: weekId !== undefined,
+    enabled: weekId !== undefined && memberId !== undefined,
     staleTime: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('member_reactions')
         .select('member_id, emoji')
-        .eq('week_id', weekId!);
+        .eq('week_id', weekId!)
+        .eq('reactor_id', memberId!);
       if (error) throw error;
       return data ?? [];
     },
@@ -112,12 +123,20 @@ export function usePostReactionCounts(weekId: number | undefined) {
   return { counts, ...query };
 }
 
+/** Same reason as useMyMemberReactions: `or public.is_admin()` on the policy. */
 export function useMyPostReactions() {
+  const { member } = useAuth();
+  const memberId = member?.id;
+
   const query = useQuery({
     queryKey: reactionKeys.myPost,
+    enabled: memberId !== undefined,
     staleTime: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from('post_reactions').select('post_id, emoji');
+      const { data, error } = await supabase
+        .from('post_reactions')
+        .select('post_id, emoji')
+        .eq('reactor_id', memberId!);
       if (error) throw error;
       return data ?? [];
     },

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/app/providers/AuthProvider';
 import type { LiveStanding, WeekStanding } from '@/lib/database.types';
 import { rankMembers, type Ranked } from '@/lib/ranking';
 
@@ -46,20 +47,33 @@ export function useWeekStandings(weekId: number | undefined) {
 }
 
 /**
- * Your own ballots for the open week. RLS makes this return your rows and
- * nobody else's, which is the whole trick — the client never has the data it
- * would need to reveal anyone.
+ * Your own ballots for the open week.
+ *
+ * NEVER lean on RLS alone to make "my rows" mean mine. `votes_select_own` reads
+ * `voter_id = current_member_id() OR public.is_admin()`, so for an admin this
+ * query returns the WHOLE table — and folding that into a `target_id -> value`
+ * map silently keeps whichever row arrived last, showing the admin somebody
+ * else's ballot as their own. The counts stay right because they come from
+ * live_standings, which is what made this so quiet a bug.
+ *
+ * The explicit `voter_id` filter is what makes it correct for every account.
+ * Every other "my rows" query in the app carries the same filter for the same
+ * reason.
  */
 export function useMyVotes(weekId: number | undefined) {
+  const { member } = useAuth();
+  const memberId = member?.id;
+
   return useQuery({
     queryKey: standingsKeys.myVotes(weekId),
-    enabled: weekId !== undefined,
+    enabled: weekId !== undefined && memberId !== undefined,
     staleTime: 30_000,
     queryFn: async (): Promise<Record<string, VoteValue>> => {
       const { data, error } = await supabase
         .from('votes')
         .select('target_id, value')
-        .eq('week_id', weekId!);
+        .eq('week_id', weekId!)
+        .eq('voter_id', memberId!);
       if (error) throw error;
       const map: Record<string, VoteValue> = {};
       for (const row of data ?? []) map[row.target_id] = row.value;

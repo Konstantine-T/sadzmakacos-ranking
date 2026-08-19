@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/app/providers/AuthProvider';
 import type { Post, PostScore } from '@/lib/database.types';
 import type { VoteValue } from '@/features/standings/api';
 
@@ -41,12 +42,25 @@ export function usePostScores(weekId: number | undefined) {
 }
 
 /** All of my post ballots. RLS scopes this to me; it stays tiny. */
+/**
+ * Explicit `voter_id` filter, not RLS: `post_votes_select_own` is
+ * `voter_id = current_member_id() OR public.is_admin()`, so without it an admin
+ * reads every member's post votes and sees the last one written as their own.
+ * See the note on useMyVotes in features/standings/api.ts.
+ */
 export function useMyPostVotes() {
+  const { member } = useAuth();
+  const memberId = member?.id;
+
   return useQuery({
     queryKey: postKeys.myVotes,
+    enabled: memberId !== undefined,
     staleTime: 30_000,
     queryFn: async (): Promise<Record<string, VoteValue>> => {
-      const { data, error } = await supabase.from('post_votes').select('post_id, value');
+      const { data, error } = await supabase
+        .from('post_votes')
+        .select('post_id, value')
+        .eq('voter_id', memberId!);
       if (error) throw error;
       const map: Record<string, VoteValue> = {};
       for (const row of data ?? []) map[row.post_id] = row.value;
