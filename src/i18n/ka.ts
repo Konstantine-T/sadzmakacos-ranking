@@ -237,6 +237,32 @@ export const ka = {
     },
   },
 
+  /**
+   * Notifications.
+   *
+   * Nicknames are NEVER inflected. The ergative "-მ" that "გიორგიმ დაწერა"
+   * needs is not uniform across nicknames, so every line that carries a name
+   * sets it off with a dash instead: "ახალი პოსტი — გიორგი".
+   *
+   * Reactions and votes say "ვიღაცამ" and never a name. That is rule 1, and
+   * the database backs it up — a reaction row physically cannot store who
+   * reacted, so there is no name here to reach for even by mistake.
+   */
+  notifications: {
+    title: "შეტყობინებები",
+    open: "შეტყობინებები",
+    empty: "ჯერ არაფერი მომხდარა",
+    newPost: (nickname: string) => `ახალი პოსტი — ${nickname}`,
+    rankMoved: (from: number, to: number) => `ახლა #${to} ხარ (იყავი #${from})`,
+    rankFirst: (to: number) => `ახლა #${to} ხარ`,
+    reactionOne: (emoji: string) => `ვიღაცამ ${emoji} დაარეაქცია`,
+    reactionMany: (n: number) => `${n} ახალი რეაქცია`,
+    postReactionOne: (emoji: string) => `ვიღაცამ ${emoji} დაარეაქცია შენს პოსტს`,
+    postReactionMany: (n: number) => `შენს პოსტს ${n} რეაქცია`,
+    postVoteOne: "ვიღაცამ ხმა მისცა შენს პოსტს",
+    postVoteMany: (n: number) => `შენს პოსტს ${n} ხმა`,
+  },
+
   common: {
     loading: "იტვირთება…",
     save: "შენახვა",

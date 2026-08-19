@@ -9,6 +9,9 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
+/** The four notification streams. Each carries its own read cursor. */
+export type NotificationKind = 'post' | 'rank' | 'reaction' | 'post_vote';
+
 export type BadgeKey =
   | 'weekly_king'
   | 'crown_streak_3'
@@ -127,6 +130,37 @@ export interface Database {
       post_reactions: {
         Row: { post_id: string; reactor_id: string; emoji: string; created_at: string };
         Insert: { post_id: string; reactor_id: string; emoji: string };
+        Update: never;
+        Relationships: [];
+      };
+      /**
+       * Read-only to clients: every row is written by a trigger or by
+       * cast_vote, and there is no INSERT grant. `actor_id` is non-null only
+       * for `kind: 'post'` — a CHECK constraint enforces it, because posts are
+       * signed and reactions and votes are not (rule 1).
+       */
+      notifications: {
+        Row: {
+          id: number;
+          kind: NotificationKind;
+          recipient_id: string | null;
+          actor_id: string | null;
+          week_id: number | null;
+          post_id: string | null;
+          emoji: string | null;
+          rank_from: number | null;
+          rank_to: number | null;
+          tally: number;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      /** One read cursor per kind. Written only by mark_notifications_read(). */
+      notification_reads: {
+        Row: { member_id: string; kind: NotificationKind; read_at: string };
+        Insert: never;
         Update: never;
         Relationships: [];
       };
@@ -287,6 +321,15 @@ export interface Database {
       toggle_member_reaction: { Args: { p_member_id: string; p_emoji: string }; Returns: boolean };
       toggle_post_reaction: { Args: { p_post_id: string; p_emoji: string }; Returns: boolean };
       create_post: { Args: { p_body: string }; Returns: string };
+      unread_counts: {
+        Args: Record<string, never>;
+        Returns: { kind: NotificationKind; unread: number }[];
+      };
+      /** Omit p_kind to mark every stream read; pass one to mark just that one. */
+      mark_notifications_read: {
+        Args: { p_kind?: NotificationKind | null };
+        Returns: undefined;
+      };
 
       admin_link_account: {
         Args: { p_auth_user_id: string; p_member_id: string };
@@ -357,6 +400,8 @@ export type PollAnswer = Tables<'poll_answers'>;
 export type AuditEntry = Tables<'audit_log'>;
 export type WeeklyResult = Tables<'weekly_results'>;
 export type PendingAccount = Tables<'pending_accounts'>;
+export type Notification = Tables<'notifications'>;
+export type NotificationRead = Tables<'notification_reads'>;
 
 export type LiveStanding = Views<'live_standings'>;
 export type WeekStanding = Views<'week_standings'>;

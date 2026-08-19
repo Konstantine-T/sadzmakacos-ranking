@@ -1,4 +1,5 @@
 import { Box, ButtonBase, Stack, Typography } from '@mui/material';
+import { UnreadChip } from '@/components/UnreadChip';
 import { ka } from '@/i18n/ka';
 
 export const NAV_RAIL_WIDTH = 236;
@@ -8,6 +9,8 @@ interface NavRailProps {
   activeIndex: number;
   /** Omitted when there is no open week — the live card disappears with it. */
   turnout?: { voters: number; total: number };
+  /** Path → unread count. Same chip the bottom bar uses, same source. */
+  unread?: Record<string, number>;
   onNavigate: (to: string) => void;
 }
 
@@ -19,7 +22,13 @@ interface NavRailProps {
  * status the phone header carries as a single "ღია" pill gets room to say how
  * many people have actually voted.
  */
-export function NavRail({ items, activeIndex, turnout, onNavigate }: NavRailProps) {
+export function NavRail({
+  items,
+  activeIndex,
+  turnout,
+  unread,
+  onNavigate,
+}: NavRailProps) {
   const pct =
     turnout && turnout.total > 0
       ? Math.min(100, Math.round((turnout.voters / turnout.total) * 100))
@@ -89,7 +98,11 @@ export function NavRail({ items, activeIndex, turnout, onNavigate }: NavRailProp
                 }}
               />
               <Typography
+                component="span"
                 sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
                   fontSize: 14,
                   fontWeight: 600,
                   color: active ? 'text.primary' : 'textMute',
@@ -97,6 +110,7 @@ export function NavRail({ items, activeIndex, turnout, onNavigate }: NavRailProp
                 }}
               >
                 {item.label}
+                <UnreadChip count={unread?.[item.to] ?? 0} />
               </Typography>
             </ButtonBase>
           );

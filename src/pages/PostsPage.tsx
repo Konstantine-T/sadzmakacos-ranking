@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Alert, Box, Stack, Typography } from '@mui/material';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useToast } from '@/app/providers/ToastProvider';
@@ -20,6 +21,7 @@ import {
   useTogglePostReaction,
 } from '@/features/reactions/api';
 import { useRealtime } from '@/features/realtime/useRealtime';
+import { useMarkRead } from '@/features/notifications/api';
 import { ka } from '@/i18n/ka';
 
 /** Everything the group says out loud this week: one post each, and the votes
@@ -42,6 +44,22 @@ export function PostsPage() {
   const reactionCounts = usePostReactionCounts(weekId);
   const myReactions = useMyPostReactions();
   const toggleReaction = useTogglePostReaction(weekId);
+
+  /**
+   * Reading the posts IS reading the post notifications, so the chip clears
+   * itself and the bell total drops by the same amount — they are one count.
+   *
+   * Keyed on the newest post rather than on mount alone: a post arriving while
+   * you are sitting here would otherwise raise a chip on the tab you are
+   * already looking at.
+   */
+  const markRead = useMarkRead();
+  const newestPost = posts.rows[0]?.id;
+  const mark = markRead.mutate;
+  useEffect(() => {
+    if (weekId === undefined) return;
+    mark('post');
+  }, [weekId, newestPost, mark]);
 
   if (weekQuery.isPending) return <Splash />;
   if (!week) {

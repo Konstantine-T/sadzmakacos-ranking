@@ -15,6 +15,9 @@ import {
 } from "@mui/material";
 import { ka } from "@/i18n/ka";
 import { useOpenWeek, useTurnout } from "@/features/week/api";
+import { NotificationBell } from "@/features/notifications/NotificationBell";
+import { useUnreadCounts } from "@/features/notifications/api";
+import { UnreadChip } from "@/components/UnreadChip";
 import { NavRail } from "./NavRail";
 import { SideRail } from "./SideRail";
 import { useWideLayout, useWidestLayout } from "./layout";
@@ -61,6 +64,14 @@ export function AppShell() {
     if (path.startsWith("/me") || path.startsWith("/members")) return 3;
     return -1;
   }, [location.pathname]);
+
+  /**
+   * The პოსტები chip. Not a second counter — it is the 'post' slice of the
+   * same unread_counts() the bell sums, which is why reading the posts drops
+   * both at once.
+   */
+  const { counts } = useUnreadCounts();
+  const navUnread: Record<string, number> = { "/posts": counts.post };
 
   const detail = isDetailRoute(location.pathname);
   const live =
@@ -113,6 +124,7 @@ export function AppShell() {
                 }
               : undefined
           }
+          unread={navUnread}
           onNavigate={(to) => navigate(to)}
         />
 
@@ -173,6 +185,9 @@ export function AppShell() {
             <Box sx={{ flexGrow: 1 }} />
 
             {detail && backButton(ka.nav.backToRanking)}
+
+            {/* Same component as the phone header — there is no second bell. */}
+            <NotificationBell />
           </Box>
 
           <Box
@@ -224,8 +239,10 @@ export function AppShell() {
               component={RouterLink}
               to="/"
               variant="h3"
+              noWrap
               sx={{
                 flexGrow: 1,
+                minWidth: 0,
                 textDecoration: "none",
                 color: "text.primary",
                 fontFamily: (t) => t.typography.h1.fontFamily,
@@ -236,6 +253,8 @@ export function AppShell() {
             </Typography>
 
             {detail && backButton(ka.common.back)}
+
+            <NotificationBell />
 
             {/* The week is open and taking votes — the only status the header carries. */}
             {live && (
@@ -340,7 +359,11 @@ export function AppShell() {
                     }}
                   />
                   <Typography
+                    component="span"
                     sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
                       fontSize: 12,
                       fontWeight: 600,
                       color: active ? "text.primary" : "textMute",
@@ -348,6 +371,7 @@ export function AppShell() {
                     }}
                   >
                     {item.label}
+                    <UnreadChip count={navUnread[item.to] ?? 0} />
                   </Typography>
                 </ButtonBase>
               );

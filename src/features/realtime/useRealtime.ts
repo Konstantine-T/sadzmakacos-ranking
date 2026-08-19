@@ -6,6 +6,7 @@ import { postKeys } from '@/features/posts/api';
 import { reactionKeys } from '@/features/reactions/api';
 import { pollKeys } from '@/features/polls/api';
 import { weekKeys } from '@/features/week/api';
+import { notificationKeys } from '@/features/notifications/api';
 
 type Signal =
   | 'votes'
@@ -61,6 +62,19 @@ export function useRealtime(weekId: number | undefined) {
       if (signals.has('polls')) {
         queryClient.invalidateQueries({ queryKey: pollKeys.active });
       }
+      /*
+        Notifications need no subscription of their own — the table is
+        deliberately out of the publication, for the same reason `votes` is.
+        Every writer sits downstream of a signal already handled above, so any
+        ping at all means the feed may have moved. Refetching both queries on
+        every flush costs one small round trip per 400ms burst and keeps the
+        badge honest without streaming per-member rows to anybody.
+      */
+      if (signals.size > 0) {
+        queryClient.invalidateQueries({ queryKey: notificationKeys.list });
+        queryClient.invalidateQueries({ queryKey: notificationKeys.unread });
+      }
+
       if (signals.has('weeks')) {
         // A week just closed or was adjusted — everything is suspect.
         queryClient.invalidateQueries({ queryKey: weekKeys.open });
