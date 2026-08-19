@@ -64,7 +64,7 @@ export const radii = {
 } as const;
 
 /** The fixed reaction set (§1.6). Order is the display order. */
-export const REACTIONS = ['🔥', '😂', '💀', '👑', '😭'] as const;
+export const REACTIONS = ['🔥', '😂', '💀', '👑', '😭', '💩', '🖕', '🫂'] as const;
 export type Reaction = (typeof REACTIONS)[number];
 
 /**

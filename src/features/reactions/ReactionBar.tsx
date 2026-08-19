@@ -14,12 +14,14 @@ interface ReactionBarProps {
 }
 
 /**
- * 🔥 😂 💀 👑 😭 — one of each per member per target, toggleable, counts only.
+ * 🔥 😂 💀 👑 😭 💩 🖕 🫂 — one of each per member per target, toggleable,
+ * counts only.
  *
  * Only emoji somebody has actually used are shown; the rest live behind the add
- * button. The visual pill is 30–32px because five of them plus the add button
- * have to fit inside 390px, but each one carries an invisible padded hit area
- * that brings the real tap target to 44px (rule 5).
+ * button. The visual pill is 30–32px so that a realistic row of them plus the
+ * add button fits inside 390px, but each one carries an invisible padded hit
+ * area that brings the real tap target to 44px (rule 5). Past that the row
+ * wraps rather than shrinking — the hit area is not negotiable.
  */
 export function ReactionBar({ counts, mine, disabled, size = 'md', onToggle }: ReactionBarProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -110,9 +112,22 @@ export function ReactionBar({ counts, mine, disabled, size = 'md', onToggle }: R
         onClose={() => setAnchor(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        slotProps={{ paper: { sx: { borderRadius: 999, p: 0.5 } } }}
+        slotProps={{ paper: { sx: { borderRadius: '20px', p: 0.5 } } }}
       >
-        <Stack direction="row" spacing={0.25}>
+        {/*
+          Four across, two down. Eight 44px buttons in a single row come to
+          ~374px and would collide with the popover's own margins at 390px, so
+          the picker wraps instead of shrinking the tap targets below 44 (rule
+          5). That is also why the paper is a rounded rect and no longer a
+          pill — a 999px radius around two rows reads as a rendering bug.
+        */}
+        <Stack
+          direction="row"
+          spacing={0.25}
+          useFlexGap
+          flexWrap="wrap"
+          sx={{ maxWidth: 4 * 44 + 3 * 2 }}
+        >
           {REACTIONS.map((emoji) => (
             <ButtonBase
               key={emoji}

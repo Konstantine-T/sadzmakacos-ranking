@@ -76,7 +76,7 @@ This is what makes `+1/−1` (net 0, total 2) outrank `0/0` (net 0, total 0) —
 
 ### 1.6 Reactions
 
-Fixed set: `🔥 😂 💀 👑 😭`
+Fixed set: `🔥 😂 💀 👑 😭 💩 🖕 🫂`
 
 Placed on:
 - **Ranking rows** (current week only, scoped to `week_id` + `member_id`)
@@ -208,14 +208,14 @@ create table member_reactions (
   week_id    int not null references weeks(id) on delete cascade,
   member_id  uuid not null references members(id) on delete cascade,
   reactor_id uuid not null references members(id) on delete cascade,
-  emoji      text not null check (emoji in ('🔥','😂','💀','👑','😭')),
+  emoji      text not null check (emoji in ('🔥','😂','💀','👑','😭','💩','🖕','🫂')),
   primary key (week_id, member_id, reactor_id, emoji)
 );
 
 create table post_reactions (
   post_id    uuid not null references posts(id) on delete cascade,
   reactor_id uuid not null references members(id) on delete cascade,
-  emoji      text not null check (emoji in ('🔥','😂','💀','👑','😭')),
+  emoji      text not null check (emoji in ('🔥','😂','💀','👑','😭','💩','🖕','🫂')),
   primary key (post_id, reactor_id, emoji)
 );
 
@@ -531,7 +531,7 @@ features/
   comments/
     CommentThread, CommentComposer (100 chars), CommentItem
   reactions/
-    ReactionBar           🔥😂💀👑😭, counts only, toggle
+    ReactionBar           🔥😂💀👑😭💩🖕🫂, counts only, toggle
   profile/
     RankHistoryChart      MUI X LineChart, inverted Y axis (rank 1 on top)
     BadgeShelf, WeekBreakdownTable

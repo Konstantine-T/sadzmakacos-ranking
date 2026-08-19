@@ -56,10 +56,14 @@ Full spec: [sadzmakatsos-ranki-plan.md](sadzmakatsos-ranki-plan.md).
   `total_votes` and `nickname` order rows *inside* a shared rank and never
   change it, cleanest sheet first, so `5/0` renders above `6/1` while both read
   #3. Ascending `total_votes` *is* ascending downvotes, since
-  `total = net + 2·down` when `net` is fixed. The rule lives in **three** places
+  `total = net + 2·down` when `net` is fixed. The rule lives in **four** places
   and they must agree — `src/lib/ranking.ts`, `close_current_week()` and
   `admin_update_result()` (both redefined in
-  `20260817000200_ranking_tiebreak.sql`). Change one, change all three.
+  `20260817000200_ranking_tiebreak.sql`), and `live_ranks()` (added in
+  `20260819000200_notifications.sql`, which needs the *open* week's ranks
+  server-side because `live_standings` carries none). Change one, change all
+  four. A rank notification reads "ახლა #4 ხარ" while the member is looking at
+  the board, so `live_ranks()` disagreeing with `ranking.ts` is visible.
   Closed weeks display via `sortFrozen()`, which reorders rows but never
   recomputes the frozen rank (rule 3).
 - **`cast_vote` resolves the open week server-side.** Never send a client

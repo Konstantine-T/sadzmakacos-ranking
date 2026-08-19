@@ -12,3 +12,6 @@ dist-ssr
 .vercel
 supabase/.temp
 supabase/.branches
+
+# superpowers brainstorming companion (local mockups)
+.superpowers/

@@ -60,7 +60,7 @@ declare
   j         int;
   v_post_id uuid;
   v_pv      int;
-  v_emojis  text[] := array['🔥','😂','💀','👑','😭'];
+  v_emojis  text[] := array['🔥','😂','💀','👑','😭','💩','🖕','🫂'];
 begin
   if exists (select 1 from public.members where auth_user_id is not null) then
     raise exception 'seed.sql refuses to run: real Google accounts are already linked to members';
@@ -184,7 +184,7 @@ begin
       for t in 1..((j % 3) + 1) loop
         insert into public.post_reactions (post_id, reactor_id, emoji)
         values (v_post_id, v_ids[((wk * 2 + j + t) % 20) + 1],
-                v_emojis[((j + t) % 5) + 1])
+                v_emojis[((j + t) % array_length(v_emojis, 1)) + 1])
         on conflict do nothing;
       end loop;
 
@@ -196,7 +196,7 @@ begin
       for j in 1..((t + wk) % 4) loop
         insert into public.member_reactions (week_id, member_id, reactor_id, emoji)
         values (v_week, v_ids[t], v_ids[((t + wk * 3 + j * 5) % 20) + 1],
-                v_emojis[((t + j) % 5) + 1])
+                v_emojis[((t + j) % array_length(v_emojis, 1)) + 1])
         on conflict do nothing;
       end loop;
     end loop;
