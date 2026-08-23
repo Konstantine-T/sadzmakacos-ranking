@@ -291,7 +291,15 @@ export const ka = {
     forbidden: "ამის უფლება არ გაქვს.",
     tooLong: "ტექსტი ძალიან გრძელია.",
     empty: "ცარიელია.",
-    avatarTooBig: "სურათი ძალიან დიდია (მაქს. 2MB).",
+    /*
+      The size the member is told about is the size of the file they PICK, not
+      the size of what gets stored — the square that goes to storage is ~40KB
+      whatever they pick. The old copy said 2MB, and it was enforced against the
+      original photo, so a normal phone camera shot was refused outright.
+    */
+    avatarTooBig: "სურათი ძალიან დიდია (მაქს. 32MB).",
+    avatarWrongType: "ეს ფაილი სურათი არ არის.",
+    avatarUndecodable: "ამ სურათს ვერ ვხსნი. სცადე JPG ან PNG.",
     pollClosed: "გამოკითხვა დახურულია.",
     pollSingleChoice: "აქ მხოლოდ ერთი პასუხის არჩევა შეიძლება.",
     pollTooFewOptions: "მინიმუმ ორი პასუხი უნდა იყოს.",

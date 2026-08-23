@@ -162,7 +162,10 @@ export function MePage() {
                 nickname={member.nickname}
                 currentPath={member.avatarUrl}
                 onUploaded={(path) => save({ avatar_url: path })}
-                onError={toastError}
+                /* Already Georgian, and already specific about what went
+                   wrong — passing it through toastError would run it back
+                   through errorToKa and flatten it to the generic sentence. */
+                onError={(message) => toast(message, 'error')}
               />
 
               <TextField

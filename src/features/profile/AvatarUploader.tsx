@@ -4,47 +4,127 @@ import CameraIcon from '@mui/icons-material/PhotoCameraRounded';
 import imageCompression from 'browser-image-compression';
 import { AVATAR_BUCKET, avatarUrl, supabase } from '@/lib/supabase';
 import { avatarProps } from '@/lib/avatar';
+import {
+  AVATAR_SIZE,
+  MAX_UPLOAD_BYTES,
+  UNDECODABLE,
+  centreSquare,
+  checkInput,
+  objectPath,
+  outputFormat,
+  uploadErrorKey,
+} from '@/lib/avatarImage';
 import { ka } from '@/i18n/ka';
-
-const MAX_BYTES = 2 * 1024 * 1024; // 2MB before compression
-const SIZE = 512;
 
 interface AvatarUploaderProps {
   memberId: string;
   nickname: string;
   currentPath: string | null;
   onUploaded: (path: string) => void;
-  onError: (error: unknown) => void;
-}
-
-/** Crops to a 512×512 square from the centre, then hands it to WebP encoding. */
-async function toSquare(file: File): Promise<File> {
-  const bitmap = await createImageBitmap(file);
-  const side = Math.min(bitmap.width, bitmap.height);
-  const sx = (bitmap.width - side) / 2;
-  const sy = (bitmap.height - side) / 2;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = SIZE;
-  canvas.height = SIZE;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return file;
-  ctx.drawImage(bitmap, sx, sy, side, side, 0, 0, SIZE, SIZE);
-  bitmap.close();
-
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/webp', 0.88),
-  );
-  if (!blob) return file;
-  return new File([blob], 'avatar.webp', { type: 'image/webp' });
+  onError: (message: string) => void;
 }
 
 /**
- * Resize/crop to a 512×512 WebP square before upload (§6), so a 6MB phone
- * photo becomes ~40KB and the twenty-row board stays fast on mobile data.
+ * Does this browser's canvas actually encode WebP?
  *
- * The storage path is `{member_id}/avatar.webp`; the write policy keys off that
- * first folder segment, so you can only ever overwrite your own.
+ * `toDataURL` returns a PNG data URL when the requested type is unsupported,
+ * so the prefix is the answer. Cached: the result cannot change mid-session.
+ */
+let webpEncoder: boolean | undefined;
+function canEncodeWebp(): boolean {
+  if (webpEncoder === undefined) {
+    const probe = document.createElement('canvas');
+    probe.width = 1;
+    probe.height = 1;
+    webpEncoder = probe.toDataURL('image/webp').startsWith('data:image/webp');
+  }
+  return webpEncoder;
+}
+
+/**
+ * A picked file becomes a 512×512 square, small enough that the twenty-row
+ * board stays fast on mobile data (§6).
+ *
+ * The order here is not incidental — it is the fix for four separate ways this
+ * used to fail on somebody's phone but not on yours:
+ *
+ *  1. `imageCompression()` first, NOT a hand-rolled `createImageBitmap`. The
+ *     library deliberately refuses to call `createImageBitmap` on iOS and
+ *     Safari (it throws "Skip createImageBitmap on IOS and Safari" internally
+ *     and falls back to an `<img>`), and it keeps the intermediate canvas under
+ *     the browser's maximum area — a 48MP photo drawn at full resolution
+ *     silently produces a blank canvas on an iPhone. Calling it directly, as
+ *     this file used to, walked into both.
+ *  2. `useWebWorker: false`. In worker mode the library fetches ITSELF from
+ *     jsdelivr with `importScripts`, and its worker `error` handler rejects
+ *     with no main-thread fallback — so an ad blocker, a DNS filter or one bad
+ *     minute on the CDN failed the upload outright. For a 512px avatar the
+ *     worker saves nothing worth that dependency.
+ *  3. The output type is chosen by asking the encoder, not by assuming. See
+ *     `outputFormat`.
+ *  4. Nothing is measured against the bucket's 2MB limit until after
+ *     compression, because that is when it becomes true.
+ */
+async function toAvatarFile(file: File): Promise<{ file: File; extension: string }> {
+  const format = outputFormat(canEncodeWebp());
+
+  // Decode + orient + downscale on the library's browser-safe path. 1024 keeps
+  // enough detail that the centre crop still fills 512 without upscaling.
+  // Browser decoders reject with a bare Event, so tag the stage that failed
+  // rather than letting it arrive as an unreadable generic error.
+  let reduced: File;
+  try {
+    reduced = await imageCompression(file, {
+      maxWidthOrHeight: AVATAR_SIZE * 2,
+      maxSizeMB: 1,
+      initialQuality: 0.92,
+      fileType: format.mime,
+      useWebWorker: false,
+    });
+  } catch (cause) {
+    // `lib` is ES2020 here, so no `{ cause }` option — keep the original
+    // wording in the message instead, where the console still shows it.
+    throw new Error(`${UNDECODABLE}: ${cause instanceof Error ? cause.message : String(cause)}`);
+  }
+
+  const [, source] = await imageCompression.drawFileInCanvas(reduced);
+  const { sx, sy, side } = centreSquare(source.width, source.height);
+
+  const square = document.createElement('canvas');
+  square.width = AVATAR_SIZE;
+  square.height = AVATAR_SIZE;
+  const ctx = square.getContext('2d');
+  // No 2D context at all: ship the reduced original, which is already the right
+  // type and well under the bucket limit — just not cropped square.
+  if (!ctx) return { file: reduced, extension: format.extension };
+  ctx.drawImage(source, sx, sy, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+
+  const squared = await imageCompression.canvasToFile(
+    square,
+    format.mime,
+    `avatar.${format.extension}`,
+    Date.now(),
+    format.quality,
+  );
+
+  // A 512px square lands around 40KB, so this is a backstop rather than a step:
+  // it only runs if some pathological image encodes past what storage accepts.
+  if (squared.size > MAX_UPLOAD_BYTES) {
+    const squeezed = await imageCompression(squared, {
+      maxWidthOrHeight: AVATAR_SIZE,
+      maxSizeMB: 0.3,
+      fileType: format.mime,
+      useWebWorker: false,
+    });
+    return { file: squeezed, extension: format.extension };
+  }
+
+  return { file: squared, extension: format.extension };
+}
+
+/**
+ * The storage path is `{member_id}/{timestamp}.{ext}`; the write policy keys off
+ * that first folder segment, so you can only ever write into your own folder.
  */
 export function AvatarUploader({
   memberId,
@@ -57,34 +137,27 @@ export function AvatarUploader({
   const [busy, setBusy] = useState(false);
 
   const handleFile = async (file: File) => {
-    if (file.size > MAX_BYTES) {
-      onError(new Error(ka.errors.avatarTooBig));
+    const rejected = checkInput(file);
+    if (rejected) {
+      onError(rejected === 'inputTooBig' ? ka.errors.avatarTooBig : ka.errors.avatarWrongType);
       return;
     }
 
     setBusy(true);
     try {
-      const square = await toSquare(file);
-      const compressed = await imageCompression(square, {
-        maxWidthOrHeight: SIZE,
-        maxSizeMB: 0.3,
-        fileType: 'image/webp',
-        useWebWorker: true,
-      });
+      const avatar = await toAvatarFile(file);
+      const path = objectPath(memberId, avatar.extension, Date.now());
 
-      // A fresh filename per upload rather than a `?v=` query string: the
-      // storage policy keys on the first folder segment either way, but a new
-      // path sidesteps CDN caching entirely instead of relying on getPublicUrl
-      // passing a query string through untouched.
-      const path = `${memberId}/${Date.now()}.webp`;
       const { error } = await supabase.storage
         .from(AVATAR_BUCKET)
-        .upload(path, compressed, { upsert: true, contentType: 'image/webp' });
+        .upload(path, avatar.file, { upsert: true, contentType: avatar.file.type });
       if (error) throw error;
 
       onUploaded(path);
     } catch (error) {
-      onError(error);
+      // Every failure used to read "რაღაც ვერ გამოვიდა", which is why nobody
+      // could say what was wrong with their phone.
+      onError(ka.errors[uploadErrorKey(error)]);
     } finally {
       setBusy(false);
     }
@@ -94,10 +167,16 @@ export function AvatarUploader({
 
   return (
     <Box>
+      {/*
+        `image/*` rather than a three-type list: an iPhone converts HEIC to JPEG
+        on its way out of the picker, but several Android pickers show an empty
+        folder when the accept list names types they don't recognise. Whether
+        the bytes decode is decided by the decoder, not by this attribute.
+      */}
       <input
         ref={inputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/*"
         hidden
         onChange={(event) => {
           const file = event.target.files?.[0];
