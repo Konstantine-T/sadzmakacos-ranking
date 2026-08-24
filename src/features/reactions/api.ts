@@ -23,6 +23,25 @@ export type MineByTarget = Map<string, Set<string>>;
 
 export const NO_REACTIONS: Set<string> = new Set();
 
+/**
+ * Whether a board row should render its reaction bar at all.
+ *
+ * Showing reactions and being able to add one are two different things, and
+ * the board used to conflate them by gating on `onReact`. A closed week has no
+ * `onReact` — `toggle_member_reaction` resolves the OPEN week server-side, so
+ * an archived reaction can never change — but it still holds a week's worth of
+ * counts that are the whole point of looking back at it.
+ *
+ * A member nobody reacted to that week gets no bar rather than an empty strip.
+ */
+export function showReactions(
+  counts: Record<string, number> | undefined,
+  interactive: boolean,
+): boolean {
+  if (interactive) return true;
+  return counts !== undefined && Object.values(counts).some((count) => count > 0);
+}
+
 function groupMine(rows: { emoji: string }[], idOf: (row: never) => string): MineByTarget {
   const map: MineByTarget = new Map();
   for (const row of rows) {

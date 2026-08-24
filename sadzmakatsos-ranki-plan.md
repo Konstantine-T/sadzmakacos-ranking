@@ -79,7 +79,10 @@ This is what makes `+1/−1` (net 0, total 2) outrank `0/0` (net 0, total 0) —
 Fixed set: `🔥 😂 💀 👑 😭 💩 🖕 🫂`
 
 Placed on:
-- **Ranking rows** (current week only, scoped to `week_id` + `member_id`)
+- **Ranking rows** (scoped to `week_id` + `member_id`). Only the *open* week
+  accepts them — `toggle_member_reaction` resolves the week server-side — but a
+  closed week still displays the ones it collected, read-only, in the archive.
+  They need no snapshot to satisfy rule 3: nothing can write to them again.
 - **Posts**
 
 One of each emoji per member per target, toggleable. Anonymous — show counts only.

@@ -12,15 +12,24 @@ import { useWideLayout } from '@/app/layout';
 import { sortFrozen } from '@/lib/ranking';
 import { useScoredPosts } from '@/features/posts/api';
 import { useMemberMap } from '@/features/members/api';
-import { usePostReactionCounts } from '@/features/reactions/api';
+import {
+  useMemberReactionCounts,
+  useMyMemberReactions,
+  usePostReactionCounts,
+} from '@/features/reactions/api';
 import { formatDay } from '@/lib/time';
 import { ka } from '@/i18n/ka';
 
 /**
- * A frozen week (rule 3). Everything here is read from the snapshot in
- * weekly_results — nothing is recomputed from votes, and nothing is editable:
- * the ranking rows carry no vote buttons or reactions (ranking reactions are
- * current-week only, §1.6).
+ * A frozen week (rule 3). The standings are read from the snapshot in
+ * weekly_results — nothing is recomputed from votes — and nothing here is
+ * editable: no vote buttons, and the reaction bars are read-only.
+ *
+ * The reactions ARE shown, unlike the vote buttons. They need no snapshot to
+ * satisfy rule 3 because they are already frozen at the source:
+ * `toggle_member_reaction` resolves the open week server-side, so a closed
+ * week's counts can never move again. This overrides plan §1.6's
+ * "current week only", which was written before a week had ever closed.
  */
 export function WeekPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +42,8 @@ export function WeekPage() {
   const posts = useScoredPosts(valid ? weekId : undefined);
   const { map: members } = useMemberMap();
   const postReactions = usePostReactionCounts(valid ? weekId : undefined);
+  const memberReactions = useMemberReactionCounts(valid ? weekId : undefined);
+  const myMemberReactions = useMyMemberReactions(valid ? weekId : undefined);
 
   if (!valid) return <NotFoundPage />;
   if (weekQuery.isPending) return <Splash />;
@@ -91,7 +102,13 @@ export function WeekPage() {
               {ka.week.current}
             </Alert>
           ) : (
-            <Board rows={rows} loading={standings.isPending} />
+            // No onReact: the bars render, highlight your own emoji, refuse the tap.
+            <Board
+              rows={rows}
+              loading={standings.isPending}
+              reactionCounts={memberReactions.counts}
+              myReactions={myMemberReactions.mine}
+            />
           )}
         </Box>
 

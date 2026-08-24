@@ -7,7 +7,12 @@ import { VoteToggle } from './VoteToggle';
 import { RankDelta } from './RankDelta';
 import { ReactionBar } from '@/features/reactions/ReactionBar';
 import { EmptyState } from '@/components/Splash';
-import { NO_REACTIONS, type CountsByTarget, type MineByTarget } from '@/features/reactions/api';
+import {
+  NO_REACTIONS,
+  showReactions,
+  type CountsByTarget,
+  type MineByTarget,
+} from '@/features/reactions/api';
 import { avatarProps } from '@/lib/avatar';
 import { avatarUrl } from '@/lib/supabase';
 import { maxTotalVotes } from '@/lib/ranking';
@@ -152,7 +157,8 @@ export function StandingsTable({
             const isSelf = myId === row.member_id;
             const expanded = openId === row.member_id;
             const detail = detailFor?.(row);
-            const hasDetail = Boolean(onReact || detail || row.total_votes > 0);
+            const reactions = showReactions(reactionCounts?.get(row.member_id), Boolean(onReact));
+            const hasDetail = Boolean(reactions || detail || row.total_votes > 0);
             const ava = avatarProps(row.member_id, row.nickname, avatarUrl(row.avatar_url));
 
             return (
@@ -353,13 +359,13 @@ export function StandingsTable({
 
                     {detail}
 
-                    {onReact && (
+                    {reactions && (
                       <ReactionBar
                         size="sm"
                         counts={reactionCounts?.get(row.member_id)}
                         mine={myReactions?.get(row.member_id) ?? NO_REACTIONS}
-                        disabled={votingDisabled}
-                        onToggle={(emoji) => onReact(row.member_id, emoji)}
+                        disabled={!onReact || votingDisabled}
+                        onToggle={(emoji) => onReact?.(row.member_id, emoji)}
                       />
                     )}
                   </Stack>

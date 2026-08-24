@@ -5,7 +5,7 @@ import { HeatBar } from './HeatBar';
 import { VoteToggle } from './VoteToggle';
 import { RankDelta } from './RankDelta';
 import { ReactionBar } from '@/features/reactions/ReactionBar';
-import { NO_REACTIONS } from '@/features/reactions/api';
+import { NO_REACTIONS, showReactions } from '@/features/reactions/api';
 import { avatarProps } from '@/lib/avatar';
 import { avatarUrl } from '@/lib/supabase';
 import { ka } from '@/i18n/ka';
@@ -30,8 +30,9 @@ interface StandingsRowProps {
   expanded?: boolean;
   onToggle?: () => void;
   /** Omit onVote/onReact to render a read-only row — that is what archive
-   *  pages and the all-time board use, since ranking reactions are scoped to
-   *  the current week (§1.6). */
+   *  pages and the all-time board use. A closed week still SHOWS the reactions
+   *  it collected (they are frozen: `toggle_member_reaction` only ever writes
+   *  to the open week); it just cannot take new ones. */
   myVote?: VoteValue;
   isSelf?: boolean;
   votingDisabled?: boolean;
@@ -88,7 +89,8 @@ export function StandingsRow({
   const heat = rowHeat(row, max, theme.palette.mode === 'dark');
   const ava = avatarProps(row.member_id, row.nickname, avatarUrl(row.avatar_url));
 
-  const hasDetail = Boolean(onReact || detail || row.total_votes > 0);
+  const reactions = showReactions(reactionCounts, Boolean(onReact));
+  const hasDetail = Boolean(reactions || detail || row.total_votes > 0);
 
   return (
     <Box
@@ -297,12 +299,12 @@ export function StandingsRow({
 
           {detail}
 
-          {onReact && (
+          {reactions && (
             <ReactionBar
               counts={reactionCounts}
               mine={myReactions}
-              disabled={votingDisabled}
-              onToggle={onReact}
+              disabled={!onReact || votingDisabled}
+              onToggle={(emoji) => onReact?.(emoji)}
             />
           )}
         </Stack>
