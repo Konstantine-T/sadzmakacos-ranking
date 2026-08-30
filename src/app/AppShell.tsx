@@ -26,6 +26,7 @@ import { formatDay } from "@/lib/time";
 const NAV = [
   { to: "/", label: ka.nav.ranking },
   { to: "/posts", label: ka.nav.posts },
+  { to: "/trivia", label: ka.nav.trivia },
   { to: "/weeks", label: ka.nav.archive },
   { to: "/me", label: ka.nav.profile },
 ];
@@ -37,6 +38,7 @@ const NAV = [
 const TITLES = [
   ka.standings.title,
   ka.posts.title,
+  ka.trivia.title,
   ka.archive.title,
   ka.nav.profile,
 ];
@@ -60,8 +62,9 @@ export function AppShell() {
     const path = location.pathname;
     if (path === "/") return 0;
     if (path.startsWith("/posts")) return 1;
-    if (path.startsWith("/weeks")) return 2;
-    if (path.startsWith("/me") || path.startsWith("/members")) return 3;
+    if (path.startsWith("/trivia")) return 2;
+    if (path.startsWith("/weeks")) return 3;
+    if (path.startsWith("/me") || path.startsWith("/members")) return 4;
     return -1;
   }, [location.pathname]);
 
