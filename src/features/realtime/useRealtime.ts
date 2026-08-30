@@ -7,6 +7,7 @@ import { reactionKeys } from '@/features/reactions/api';
 import { pollKeys } from '@/features/polls/api';
 import { weekKeys } from '@/features/week/api';
 import { notificationKeys } from '@/features/notifications/api';
+import { triviaKeys } from '@/features/trivia/api';
 
 type Signal =
   | 'votes'
@@ -15,7 +16,8 @@ type Signal =
   | 'member_reaction'
   | 'posts'
   | 'polls'
-  | 'weeks';
+  | 'weeks'
+  | 'trivia';
 
 const DEBOUNCE_MS = 400;
 
@@ -62,6 +64,10 @@ export function useRealtime(weekId: number | undefined) {
       if (signals.has('polls')) {
         queryClient.invalidateQueries({ queryKey: pollKeys.active });
       }
+      if (signals.has('trivia')) {
+        queryClient.invalidateQueries({ queryKey: triviaKeys.weekBoard(weekId) });
+        queryClient.invalidateQueries({ queryKey: triviaKeys.allTime });
+      }
       /*
         Notifications need no subscription of their own — the table is
         deliberately out of the publication, for the same reason `votes` is.
@@ -96,6 +102,14 @@ export function useRealtime(weekId: number | undefined) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'vote_events' },
         () => schedule('votes'),
+      )
+      // trivia_answers is never subscribed to — it is select-own, and
+      // publishing it would stream every member's per-question answers to
+      // every client, the same reason `votes` is not in the publication.
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'trivia_events' },
+        () => schedule('trivia'),
       )
       .on(
         'postgres_changes',

@@ -225,6 +225,60 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      /**
+       * `correct_index` is deliberately absent from `Row`: migration
+       * 20260830000100_trivia.sql grants select on exactly the other six
+       * columns, so a client-side `select('*')` fails outright rather than
+       * ever returning the answer key.
+       */
+      trivia_questions: {
+        Row: {
+          id: string;
+          week_id: number | null;
+          position: number | null;
+          section: string;
+          prompt: string;
+          /** 4–6 answer strings, original order. NEVER shuffled: correct_index points into it. */
+          options: string[];
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      /** select-own; no `or public.is_admin()` escape hatch, unlike votes_select_own. */
+      trivia_answers: {
+        Row: {
+          question_id: string;
+          member_id: string;
+          week_id: number;
+          choice_index: number;
+          is_correct: boolean;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      /** Frozen on week close by a trigger (rule 3) — never written by a client. */
+      trivia_results: {
+        Row: {
+          week_id: number;
+          member_id: string;
+          correct: number;
+          answered: number;
+          rank: number;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      /** Identity-free realtime ping, exactly like vote_events / score_events. */
+      trivia_events: {
+        Row: { id: number; week_id: number; created_at: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       audit_log: {
         Row: {
           id: number;
@@ -301,6 +355,29 @@ export interface Database {
         };
         Relationships: [];
       };
+      /** Owned by postgres, security_invoker = off — see trivia_questions above. */
+      trivia_week_scores: {
+        Row: {
+          week_id: number;
+          member_id: string;
+          nickname: string;
+          avatar_url: string | null;
+          correct: number;
+          answered: number;
+        };
+        Relationships: [];
+      };
+      trivia_totals: {
+        Row: {
+          member_id: string;
+          nickname: string;
+          avatar_url: string | null;
+          total_correct: number;
+          total_answered: number;
+          tests_taken: number;
+        };
+        Relationships: [];
+      };
     };
 
     Functions: {
@@ -365,6 +442,11 @@ export interface Database {
       admin_set_announcement: { Args: { p_id: string; p_is_active: boolean }; Returns: undefined };
 
       answer_poll: { Args: { p_poll_id: string; p_option_ids: string[] }; Returns: undefined };
+      /** Grades server-side; the key comes back only after the write commits. */
+      answer_trivia: {
+        Args: { p_question_id: string; p_choice_index: number };
+        Returns: { correct_index: number; is_correct: boolean }[];
+      };
       admin_create_poll: {
         Args: { p_question: string; p_options: string[]; p_is_multi?: boolean };
         Returns: string;
@@ -408,3 +490,16 @@ export type WeekStanding = Views<'week_standings'>;
 export type PostScore = Views<'post_scores'>;
 export type AllTimeStanding = Views<'all_time_standings'>;
 export type ReactionCount = Views<'post_reaction_counts'>;
+
+export type TriviaQuestion = Tables<'trivia_questions'>;
+export type TriviaAnswer = Tables<'trivia_answers'>;
+export type TriviaResult = Tables<'trivia_results'>;
+export type TriviaEvent = Tables<'trivia_events'>;
+export type TriviaWeekScore = Views<'trivia_week_scores'>;
+export type TriviaTotal = Views<'trivia_totals'>;
+
+/** What answer_trivia() hands back once your choice is committed. */
+export interface TriviaGrade {
+  correct_index: number;
+  is_correct: boolean;
+}
