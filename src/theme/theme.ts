@@ -1,5 +1,5 @@
 import { createTheme, type Theme } from '@mui/material/styles';
-import { dark, ember, fonts, light, radii, signal } from './tokens';
+import { dark, ember, fonts, light, quiz, radii, signal } from './tokens';
 
 declare module '@mui/material/styles' {
   interface Palette {
@@ -10,6 +10,12 @@ declare module '@mui/material/styles' {
       downSoft: string;
       gold: string;
     };
+    quiz: {
+      correct: string;
+      correctSoft: string;
+      wrong: string;
+      wrongSoft: string;
+    };
     surface2: string;
     /** Row separators inside a list — quieter than `divider`, which draws cards. */
     hairline: string;
@@ -18,6 +24,7 @@ declare module '@mui/material/styles' {
   }
   interface PaletteOptions {
     signal?: Palette['signal'];
+    quiz?: Palette['quiz'];
     surface2?: string;
     hairline?: string;
     textMute?: string;
@@ -57,6 +64,7 @@ export function buildTheme(mode: ColorMode): Theme {
       hairline: c.hairline,
       textMute: c.textMute,
       signal,
+      quiz,
       error: { main: ember[400] },
       success: { main: signal.up },
     },

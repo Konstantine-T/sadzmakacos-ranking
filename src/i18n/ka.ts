@@ -16,6 +16,7 @@ export const ka = {
     profile: "პროფილი",
     allTime: "საერთო",
     admin: "ადმინი",
+    trivia: "ტრივია",
     /** The wide layout has room to say where "back" goes. */
     backToRanking: "უკან რანკინგზე",
   },
@@ -261,6 +262,62 @@ export const ka = {
     postReactionMany: (n: number) => `შენს პოსტს ${n} რეაქცია`,
     postVoteOne: "ვიღაცამ ხმა მისცა შენს პოსტს",
     postVoteMany: (n: number) => `შენს პოსტს ${n} ხმა`,
+  },
+
+  trivia: {
+    title: "ტრივია",
+    games: "თამაშები",
+    rank: "ტრივიას რანკი",
+    thisWeek: "ეს კვირა",
+    allTime: "საერთო",
+    soon: "სხვა თამაშები მალე",
+
+    skills: {
+      name: "უნარების ტესტები",
+      subtitle: "კვირის ტესტი",
+      start: "დაწყება",
+      resume: "გაგრძელება",
+      done: "დასრულებულია",
+      progress: (answered: number, total: number) => `${answered}/${total} პასუხი`,
+    },
+
+    confirm: "დადასტურება",
+    next: "შემდეგი",
+    finish: "დასრულება",
+    counter: (n: number, total: number) => `${n} / ${total}`,
+
+    finished: {
+      title: "ტესტი დასრულებულია",
+      score: (correct: number, total: number) => `${correct} სწორი ${total}-დან`,
+      back: "ტრივიაზე დაბრუნება",
+    },
+
+    board: {
+      empty: "ჯერ არავის უთამაშია",
+      correct: "სწორი",
+      score: (correct: number, answered: number) => `${correct} / ${answered}`,
+    },
+
+    home: {
+      title: "ტრივიას ტოპ 5",
+      all: "სრული რანკი",
+    },
+
+    profile: {
+      title: "ტრივია",
+      totalCorrect: "სწორი პასუხი",
+      testsTaken: "ტესტი",
+      bestWeek: "საუკეთესო კვირა",
+      rank: "ადგილი",
+      empty: "ჯერ არ უთამაშია",
+    },
+
+    errors: {
+      noTest: "ამ კვირას ტესტი არ არის",
+      poolDry: "კითხვები ამოიწურა",
+      alreadyAnswered: "პასუხი უკვე გაცემულია",
+      weekClosed: "კვირა დაიხურა",
+    },
   },
 
   common: {

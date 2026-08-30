@@ -56,6 +56,29 @@ export const signal = {
   gold: '#FFCE5C', // rank #1 only
 } as const;
 
+/**
+ * Quiz feedback (ტრივია only).
+ *
+ * The board deliberately avoids red/green — up is ember amber, down is cold
+ * slate, so the scoreboard reads as a temperature scale rather than a traffic
+ * light. A quiz answer is the one place that rule does not apply: right and
+ * wrong are facts about a QUESTION, not a verdict on a person, and every quiz
+ * anyone has ever used is green and red.
+ *
+ * Crimson rather than the brand `ember.500` — that colour is on the
+ * დადასტურება button two rows below, and a wrong answer that matches the
+ * primary button reads as "tap me", not "you missed".
+ *
+ * Nothing outside src/features/trivia/ and src/pages/TriviaTestPage.tsx may use
+ * these.
+ */
+export const quiz = {
+  correct: '#4FB477',
+  correctSoft: 'rgba(79,180,119,0.12)',
+  wrong: '#E5544B',
+  wrongSoft: 'rgba(229,84,75,0.12)',
+} as const;
+
 export const radii = {
   sm: 8,
   md: 12,
