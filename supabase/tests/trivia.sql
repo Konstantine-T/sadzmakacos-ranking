@@ -38,16 +38,40 @@ values
   ('00000000-0000-4000-8000-0000000000c2', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'trivia-b@example.com', '{}', '{}', now(), now());
 
-with picked as (
-  select id, row_number() over (order by nickname) rn
-    from public.members where is_active
-)
-update public.members m
-   set auth_user_id = case p.rn when 1 then '00000000-0000-4000-8000-0000000000c1'::uuid
-                                else '00000000-0000-4000-8000-0000000000c2'::uuid end,
-       is_admin     = (p.rn = 2)
-from picked p
-where p.id = m.id and p.rn in (1, 2);
+-- Member A is an ordinary player; member B is the REAL admin, whoever that is.
+--
+-- The older suites in this directory force `is_admin = (rn = 2)`, which works on a
+-- freshly seeded dev database but violates the members_single_admin partial unique
+-- index on a real one that already has its admin. Adopting the existing admin
+-- instead lets this file run anywhere — and it is the more faithful test, since the
+-- account under examination is the actual admin rather than a promoted stand-in.
+--
+-- `is_admin` is never written here. Only auth_user_id is repointed, and the whole
+-- file rolls back.
+do $$
+declare v_a uuid; v_b uuid;
+begin
+  select id into v_b from public.members where is_admin limit 1;
+  if v_b is null then
+    raise exception 'FAIL: no admin exists, so the admin boundary cannot be tested';
+  end if;
+
+  select id into v_a from public.members
+   where is_active and not is_admin
+   order by nickname
+   limit 1;
+  if v_a is null then
+    raise exception 'FAIL: need at least one active non-admin member';
+  end if;
+
+  update public.members
+     set auth_user_id = '00000000-0000-4000-8000-0000000000c1'
+   where id = v_a;
+
+  update public.members
+     set auth_user_id = '00000000-0000-4000-8000-0000000000c2'
+   where id = v_b;
+end $$;
 
 delete from public.pending_accounts
  where auth_user_id in ('00000000-0000-4000-8000-0000000000c1',
@@ -177,5 +201,10 @@ begin
   if v_n < 1 then raise exception 'FAIL: scores are not visible'; end if;
   raise notice 'PASS: aggregate scores are readable by everyone';
 end $$;
+
+-- `set local` is transaction-scoped so the rollback would clear it anyway, but the
+-- editor keeps a session open across runs — drop back to the owner explicitly, the
+-- way anonymity.sql does.
+reset role;
 
 rollback;
