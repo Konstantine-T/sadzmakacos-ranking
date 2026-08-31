@@ -11,7 +11,7 @@ import { useAnswerTrivia, useMyAnswers, useWeekQuestions } from '@/features/triv
 import { ka } from '@/i18n/ka';
 
 /**
- * The full-bleed test runner: one question owns the screen, no bottom nav.
+ * Quiz runner: one question per screen, animated reveal of correct/incorrect.
  *
  * Resumability is not state we keep — it is derived. `trivia_answers` is the
  * only record that you answered anything, so on mount we jump to the first
@@ -177,8 +177,11 @@ export function TriviaTestPage() {
           answer.mutate(
             { questionId: question.id, choiceIndex },
             {
-              onSuccess: (g) =>
-                setGrade({ questionId: question.id, correctIndex: g.correct_index }),
+              onSuccess: (g) => {
+                setGrade({ questionId: question.id, correctIndex: g.correct_index });
+                // Pin the index: without this, the refetch advances the page before the member reads their grade.
+                setCursor(index);
+              },
               onError: toastError,
             },
           )
