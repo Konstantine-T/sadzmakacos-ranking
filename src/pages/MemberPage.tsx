@@ -7,6 +7,7 @@ import { ProfileHero } from '@/features/profile/ProfileHero';
 import { RankHistoryChart } from '@/features/profile/RankHistoryChart';
 import { BadgeShelf } from '@/features/profile/BadgeShelf';
 import { WeekBreakdownTable } from '@/features/profile/WeekBreakdownTable';
+import { TriviaProfileBlock } from '@/features/trivia/TriviaProfileBlock';
 import { useMember, useMemberBadges, useMemberResults } from '@/features/members/api';
 import { useWideLayout } from '@/app/layout';
 
@@ -39,6 +40,8 @@ export function MemberPage() {
 
         {/* Wide, the badges ride along inside the hero. */}
         {!wide && shelf}
+
+        <TriviaProfileBlock memberId={id} />
 
         {/* The two history views are the same length, so side by side they
             answer "how have I been doing" without a scroll. */}

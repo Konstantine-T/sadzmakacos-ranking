@@ -21,9 +21,16 @@ sequence puzzle; it is not the group's opinion of you.
 
 Two boundaries still hold, and they are the ones that matter:
 
-- **Scores are public, individual answers are not.** Everyone sees that you
-  scored 7/10. Nobody — admin included — sees *which* three you missed.
-  `trivia_answers` is select-own; the boards read aggregate views.
+- **Scores are public, individual answers are not *served* to anyone.**
+  Everyone sees that you scored 7/10. `trivia_answers` is select-own and the
+  boards read aggregate views, so no query — not even the admin's — returns
+  *which* three you missed. A determined observer can still reconstruct it:
+  question order is fixed and identical for everyone, the runner answers in
+  position order, and `trivia_week_scores` plus the `trivia_events` ping
+  publish every delta live, so watching them decodes per-question right/wrong.
+  This was weighed and accepted rather than overlooked — decoding it takes a
+  purpose-written script against the API, not anything visible in the UI, and
+  the group is ~20 lifelong friends, not strangers.
 - **The answer key is secret from every client, always.** Not for privacy — for
   the game. See § 3.
 
