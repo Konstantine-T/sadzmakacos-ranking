@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Alert, Box, Stack, Typography } from '@mui/material';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -19,6 +20,7 @@ import { BadgeShelf } from '@/features/profile/BadgeShelf';
 import { PollCard } from '@/features/polls/PollCard';
 import { useActivePolls, useAnswerPoll } from '@/features/polls/api';
 import { useAllBadges, useMemberMap } from '@/features/members/api';
+import { TriviaTopFive } from '@/features/trivia/TriviaTopFive';
 import {
   useMemberReactionCounts,
   useMyMemberReactions,
@@ -72,6 +74,7 @@ export function HomePage() {
   const { member } = useAuth();
   const { toastError } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [scope, setScope] = useState<Scope>('week');
   const [sort, setSort] = useState<AllTimeSort>('total_net');
@@ -241,6 +244,10 @@ export function HomePage() {
             <BadgeShelf badges={badges.data ?? []} title={ka.allTime.badgeWall} />
           </Box>
         )}
+
+        <Box sx={{ px: { xs: 2, lg: 0 }, pt: 3 }}>
+          <TriviaTopFive myId={member?.id} onOpen={() => navigate('/trivia')} />
+        </Box>
       </Stack>
     </PageTransition>
   );
