@@ -113,6 +113,7 @@ select
   (count(*))::int                             as answered
 from public.trivia_answers a
 join public.members m on m.id = a.member_id
+where m.is_active
 group by a.week_id, a.member_id, m.nickname, m.avatar_url;
 
 alter view public.trivia_week_scores set (security_invoker = off);
@@ -149,7 +150,8 @@ drop policy if exists trivia_events_select      on public.trivia_events;
 create policy trivia_questions_select on public.trivia_questions
   for select to authenticated using (
     week_id is not null and exists (
-      select 1 from public.weeks w where w.id = week_id and w.starts_at <= now()
+      select 1 from public.weeks w
+       where w.id = public.trivia_questions.week_id and w.starts_at <= now()
     )
   );
 
@@ -179,6 +181,15 @@ grant select on public.trivia_results     to authenticated;
 grant select on public.trivia_events      to authenticated;
 grant select on public.trivia_week_scores to authenticated;
 grant select on public.trivia_totals      to authenticated;
+
+-- Both views are security_invoker = off, so the GRANT is the only gate — RLS
+-- is not a backstop. Supabase's default privileges grant new relations in
+-- `public` to `anon`, exactly why 20260815000300_views.sql closes the same
+-- door for every view it defines. Without this, the anon key shipped in the
+-- frontend bundle reads the whole roster's nicknames, avatars and scores with
+-- no sign-in at all.
+revoke all on public.trivia_week_scores from anon;
+revoke all on public.trivia_totals      from anon;
 
 -- ------------------------------------------------------------ member rpc --
 -- Server-side grading. Returns the key only after the answer is committed, so
@@ -398,6 +409,14 @@ $do$;
 
 -- Give the CURRENT open week its ten. The insert trigger only fires for weeks
 -- created from now on, and the week that is open right now already exists.
+--
+-- PASTE THIS MIGRATION TWICE. The first paste runs before the seed exists, so
+-- the pool is empty here and this block claims zero questions — the open week
+-- gets no test. Paste supabase/seed/trivia_questions.sql (178 rows) next, then
+-- paste this whole migration file again: it is guarded and re-runnable (see
+-- below), and the second pass is what actually claims the open week's ten now
+-- that the pool is not empty. Skipping the second pass leaves /trivia showing
+-- "no test this week" for up to seven days.
 do $$
 declare v_week int := public.open_week_id();
 begin

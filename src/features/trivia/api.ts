@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { rankTrivia } from '@/lib/triviaRanking';
+import { useOpenWeek } from '@/features/week/api';
 import type {
   TriviaAnswer,
   TriviaGrade,
@@ -32,8 +33,6 @@ export const triviaKeys = {
   allTime: ['trivia', 'allTime'] as const,
   myStats: (memberId: string | undefined) => ['trivia', 'stats', memberId] as const,
 };
-
-export const QUESTIONS_PER_WEEK = 10;
 
 /** The columns a client is allowed to see. correct_index is NOT one of them. */
 const QUESTION_COLUMNS = 'id, week_id, position, section, prompt, options';
@@ -174,7 +173,7 @@ export function useTriviaAllTimeBoard() {
     }));
   }, [query.data]);
 
-  return { rows, isPending: query.isPending, played: rows.length > 0 };
+  return { rows, data: query.data, isPending: query.isPending, played: rows.length > 0 };
 }
 
 export interface TriviaStats {
@@ -184,9 +183,25 @@ export interface TriviaStats {
   rank: number | null;
 }
 
-/** The numbers a profile shows. */
-export function useMyTriviaStats(memberId: string | undefined) {
+/**
+ * The numbers a profile shows. Works for any member, not just the caller —
+ * everything it reads is already public on the leaderboard.
+ *
+ * `testsTaken` reads `trivia_totals.tests_taken` (count distinct week_id over
+ * ALL answers, open week included), not `results.data.length`: `trivia_results`
+ * only has closed weeks, so for a member's entire first week that count would
+ * read 0 while `trivia_totals`/`allTime.rows` already show them with a real
+ * score — "never played" next to a live top-5 appearance.
+ *
+ * `bestWeek` has the same gap: closed-weeks-only would read 0 for someone
+ * sitting on 9/10 right now, in week one. So it takes the max of the closed
+ * `trivia_results` rows AND the open week's own board row.
+ */
+export function useTriviaStats(memberId: string | undefined) {
   const allTime = useTriviaAllTimeBoard();
+  const openWeek = useOpenWeek();
+  const openWeekId = openWeek.data?.id;
+  const weekBoard = useTriviaWeekBoard(openWeekId);
 
   const results = useQuery({
     queryKey: triviaKeys.myStats(memberId),
@@ -203,16 +218,26 @@ export function useMyTriviaStats(memberId: string | undefined) {
   });
 
   const stats = useMemo<TriviaStats | null>(() => {
-    const mine = allTime.rows.find((r) => r.member_id === memberId);
-    if (!mine) return null;
-    const best = (results.data ?? []).reduce((max, r) => Math.max(max, r.correct), 0);
+    const totals = allTime.data?.find((t) => t.member_id === memberId);
+    if (!totals) return null;
+    const closedBest = (results.data ?? []).reduce((max, r) => Math.max(max, r.correct), 0);
+    const openBest = weekBoard.rows.find((r) => r.member_id === memberId)?.correct ?? 0;
     return {
-      totalCorrect: mine.correct,
-      testsTaken: results.data?.length ?? 0,
-      bestWeek: best,
-      rank: mine.rank,
+      totalCorrect: totals.total_correct,
+      testsTaken: totals.tests_taken,
+      bestWeek: Math.max(closedBest, openBest),
+      rank: allTime.rows.find((r) => r.member_id === memberId)?.rank ?? null,
     };
-  }, [allTime.rows, results.data, memberId]);
+  }, [allTime.data, allTime.rows, results.data, weekBoard.rows, memberId]);
 
-  return { stats, isPending: allTime.isPending || results.isPending };
+  // weekBoard stays disabled (and therefore permanently isPending in TanStack
+  // Query v5) whenever there is no open week — same trap as the rank tab.
+  // Only fold it in once a real week id makes the query live.
+  const isPending =
+    allTime.isPending ||
+    results.isPending ||
+    openWeek.isPending ||
+    (openWeekId !== undefined && weekBoard.isPending);
+
+  return { stats, isPending };
 }

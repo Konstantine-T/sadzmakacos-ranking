@@ -45,7 +45,12 @@ export function TriviaGameCard({ answered, total, onOpen }: TriviaGameCardProps)
         <Button
           fullWidth
           variant={done ? 'outlined' : 'contained'}
-          disabled={total === 0 || done}
+          // `done` stays out of `disabled`: TriviaTestPage already renders a
+          // complete finish screen (score + back button) when re-entered after
+          // the last question, and that was the only route to it. Disabling on
+          // `done` made it unreachable the moment you closed the app instead of
+          // tapping through — the label alone keeps the button reading finished.
+          disabled={total === 0}
           sx={{ height: 48 }}
           onClick={onOpen}
         >

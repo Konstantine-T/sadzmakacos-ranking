@@ -78,6 +78,33 @@ begin
   raise notice 'PASS: the ten carry distinct positions';
 end $$;
 
+-- Item 6 (design §9): ties share a rank and the next rank skips, checked
+-- against the exact same `rank() over (order by correct desc)` window
+-- function trg_week_freeze_trivia() uses, on a small constructed set rather
+-- than the claimed ten — the claim above says nothing about the score
+-- distribution, and this check should hold regardless of it. This is the one
+-- executable proof that the SQL freeze and src/lib/triviaRanking.ts agree on
+-- the same shape.
+do $$
+declare v_ranks int[];
+begin
+  select array_agg(rnk order by ord) into v_ranks
+    from (
+      select ord, rank() over (order by correct desc) as rnk
+        from (values (1, 9), (2, 7), (3, 7), (4, 7), (5, 3)) as t(ord, correct)
+    ) s;
+  if v_ranks <> array[1, 2, 2, 2, 5] then
+    raise exception 'FAIL: expected ties to share a rank and skip (1,2,2,2,5), got %', v_ranks;
+  end if;
+  raise notice 'PASS: ties share a rank and the next rank skips';
+end $$;
+
+-- Force a known key for the claimed ten. With the real seed loaded, a randomly
+-- drawn question's correct_index is rarely 1, and a spurious FAIL here would
+-- abort before the admin assertions — the ones that actually matter — ever run.
+update public.trivia_questions set correct_index = 1
+ where week_id = public.open_week_id();
+
 -- ------------------------------------------------- as a NORMAL member ------
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-4000-8000-0000000000c1"}';

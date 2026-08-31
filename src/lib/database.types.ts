@@ -238,7 +238,7 @@ export interface Database {
           position: number | null;
           section: string;
           prompt: string;
-          /** 4–6 answer strings, original order. NEVER shuffled: correct_index points into it. */
+          /** 2–6 answer strings, per the check constraint, original order. NEVER shuffled: correct_index points into it. */
           options: string[];
         };
         Insert: never;

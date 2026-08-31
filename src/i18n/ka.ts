@@ -294,7 +294,6 @@ export const ka = {
 
     board: {
       empty: "ჯერ არავის უთამაშია",
-      correct: "სწორი",
       score: (correct: number, answered: number) => `${correct} / ${answered}`,
     },
 
@@ -314,7 +313,6 @@ export const ka = {
 
     errors: {
       noTest: "ამ კვირას ტესტი არ არის",
-      poolDry: "კითხვები ამოიწურა",
       alreadyAnswered: "პასუხი უკვე გაცემულია",
       weekClosed: "კვირა დაიხურა",
     },

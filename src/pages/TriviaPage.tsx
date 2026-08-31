@@ -106,7 +106,15 @@ export function TriviaPage() {
             />
             <TriviaBoard
               rows={isAllTime ? allTime.rows : weekBoard.rows}
-              loading={isAllTime ? allTime.isPending : weekBoard.isPending}
+              loading={
+                isAllTime
+                  ? allTime.isPending
+                  : // Same trap as the games tab: `useTriviaWeekBoard(undefined)` is a
+                    // disabled query, and TanStack Query v5 reports `isPending: true`
+                    // for a disabled query forever — during a week gap this spun the
+                    // board's skeleton rows with no fetch ever in flight to resolve it.
+                    weekId !== undefined && weekBoard.isPending
+              }
               myId={member?.id}
             />
           </Stack>

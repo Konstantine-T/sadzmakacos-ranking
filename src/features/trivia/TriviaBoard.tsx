@@ -94,11 +94,7 @@ export function TriviaBoard({ rows, loading, myId, limit }: TriviaBoardProps) {
             component="span"
             sx={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
           >
-            {row.correct}
-            <Box component="span" sx={{ fontSize: 11.5, fontWeight: 400, color: 'text.disabled' }}>
-              {' / '}
-              {row.answered}
-            </Box>
+            {ka.trivia.board.score(row.correct, row.answered)}
           </Box>
         </Stack>
         );

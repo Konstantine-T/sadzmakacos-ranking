@@ -1,5 +1,5 @@
 import { Paper, Skeleton, Stack, Typography } from '@mui/material';
-import { useMyTriviaStats } from './api';
+import { useTriviaStats } from './api';
 import { ka } from '@/i18n/ka';
 
 interface TriviaProfileBlockProps {
@@ -27,7 +27,7 @@ function Stat({ value, label }: { value: string | number; label: string }) {
  * answers are not among them and never will be.
  */
 export function TriviaProfileBlock({ memberId }: TriviaProfileBlockProps) {
-  const { stats, isPending } = useMyTriviaStats(memberId);
+  const { stats, isPending } = useTriviaStats(memberId);
 
   if (isPending) return <Skeleton variant="rounded" height={96} />;
 
