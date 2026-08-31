@@ -294,7 +294,6 @@ export const ka = {
 
     board: {
       empty: "ჯერ არავის უთამაშია",
-      score: (correct: number, answered: number) => `${correct} / ${answered}`,
     },
 
     home: {
