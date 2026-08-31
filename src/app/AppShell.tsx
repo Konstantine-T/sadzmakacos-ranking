@@ -50,6 +50,15 @@ function isDetailRoute(path: string) {
   return /^\/(members|weeks)\/[^/]+/.test(path);
 }
 
+/**
+ * The one screen that takes over the phone. A quiz question needs the whole
+ * viewport and supplies its own header and its own bottom button, so the
+ * shell's top bar and nav would be a second set of both.
+ */
+function isImmersiveRoute(path: string) {
+  return path.startsWith("/trivia/skills");
+}
+
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -77,6 +86,7 @@ export function AppShell() {
   const navUnread: Record<string, number> = { "/posts": counts.post };
 
   const detail = isDetailRoute(location.pathname);
+  const immersive = isImmersiveRoute(location.pathname);
   const live =
     !detail &&
     week.data !== null &&
@@ -223,83 +233,85 @@ export function AppShell() {
   // ---------------------------------------------------------------- phone ---
   return (
     <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <AppBar
-        position="sticky"
-        color="transparent"
-        elevation={0}
-        sx={{
-          backdropFilter: "blur(16px)",
-          backgroundColor: (t) =>
-            t.palette.mode === "dark"
-              ? "rgba(20,16,15,0.86)"
-              : "rgba(251,247,246,0.88)",
-          borderBottom: (t) => `1px solid ${t.palette.hairline}`,
-        }}
-      >
-        <Container maxWidth="sm" disableGutters>
-          <Toolbar sx={{ gap: 1.25, minHeight: 56, px: 2 }}>
-            <Typography
-              component={RouterLink}
-              to="/"
-              variant="h3"
-              noWrap
-              sx={{
-                flexGrow: 1,
-                minWidth: 0,
-                textDecoration: "none",
-                color: "text.primary",
-                fontFamily: (t) => t.typography.h1.fontFamily,
-                letterSpacing: "-0.01em",
-              }}
-            >
-              {ka.appName}
-            </Typography>
-
-            {detail && backButton(ka.common.back)}
-
-            <NotificationBell />
-
-            {/* The week is open and taking votes — the only status the header carries. */}
-            {live && (
-              <Box
+      {!immersive && (
+        <AppBar
+          position="sticky"
+          color="transparent"
+          elevation={0}
+          sx={{
+            backdropFilter: "blur(16px)",
+            backgroundColor: (t) =>
+              t.palette.mode === "dark"
+                ? "rgba(20,16,15,0.86)"
+                : "rgba(251,247,246,0.88)",
+            borderBottom: (t) => `1px solid ${t.palette.hairline}`,
+          }}
+        >
+          <Container maxWidth="sm" disableGutters>
+            <Toolbar sx={{ gap: 1.25, minHeight: 56, px: 2 }}>
+              <Typography
+                component={RouterLink}
+                to="/"
+                variant="h3"
+                noWrap
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  height: 26,
-                  px: "10px",
-                  borderRadius: 999,
-                  bgcolor: "rgba(247,55,24,0.12)",
-                  border: "1px solid rgba(247,55,24,0.34)",
+                  flexGrow: 1,
+                  minWidth: 0,
+                  textDecoration: "none",
+                  color: "text.primary",
+                  fontFamily: (t) => t.typography.h1.fontFamily,
+                  letterSpacing: "-0.01em",
                 }}
               >
+                {ka.appName}
+              </Typography>
+
+              {detail && backButton(ka.common.back)}
+
+              <NotificationBell />
+
+              {/* The week is open and taking votes — the only status the header carries. */}
+              {live && (
                 <Box
                   sx={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: 99,
-                    bgcolor: "primary.main",
-                    animation: "emberPulse 2s ease-in-out infinite",
-                    "@media (prefers-reduced-motion: reduce)": {
-                      animation: "none",
-                    },
-                  }}
-                />
-                <Typography
-                  sx={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: "0.04em",
-                    color: "primary.light",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    height: 26,
+                    px: "10px",
+                    borderRadius: 999,
+                    bgcolor: "rgba(247,55,24,0.12)",
+                    border: "1px solid rgba(247,55,24,0.34)",
                   }}
                 >
-                  Live
-                </Typography>
-              </Box>
-            )}
-          </Toolbar>
-        </Container>
-      </AppBar>
+                  <Box
+                    sx={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: 99,
+                      bgcolor: "primary.main",
+                      animation: "emberPulse 2s ease-in-out infinite",
+                      "@media (prefers-reduced-motion: reduce)": {
+                        animation: "none",
+                      },
+                    }}
+                  />
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      color: "primary.light",
+                    }}
+                  >
+                    Live
+                  </Typography>
+                </Box>
+              )}
+            </Toolbar>
+          </Container>
+        </AppBar>
+      )}
 
       <Container
         component="main"
@@ -307,7 +319,9 @@ export function AppShell() {
         disableGutters
         sx={{
           flexGrow: 1,
-          pb: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 16px)`,
+          ...(!immersive && {
+            pb: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 16px)`,
+          }),
         }}
       >
         <Outlet />
@@ -318,70 +332,72 @@ export function AppShell() {
         pictograms are to decode, and a 2px dash under the active one carries
         the state without competing with the board's own colour language.
       */}
-      <Box
-        component="nav"
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: (t) => t.zIndex.appBar,
-          pb: "env(safe-area-inset-bottom)",
-          backgroundColor: (t) =>
-            t.palette.mode === "dark"
-              ? "rgba(20,16,15,0.93)"
-              : "rgba(251,247,246,0.96)",
-          backdropFilter: "blur(16px)",
-          borderTop: (t) => `1px solid ${t.palette.hairline}`,
-        }}
-      >
-        <Container maxWidth="sm" disableGutters>
-          <Box sx={{ display: "flex", p: 1 }}>
-            {NAV.map((item, index) => {
-              const active = index === activeIndex;
-              return (
-                <ButtonBase
-                  key={item.to}
-                  onClick={() => navigate(item.to)}
-                  aria-current={active ? "page" : undefined}
-                  sx={{
-                    flex: 1,
-                    height: 50,
-                    flexDirection: "column",
-                    gap: "6px",
-                    borderRadius: '10px',
-                  }}
-                >
-                  <Box
+      {!immersive && (
+        <Box
+          component="nav"
+          sx={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: (t) => t.zIndex.appBar,
+            pb: "env(safe-area-inset-bottom)",
+            backgroundColor: (t) =>
+              t.palette.mode === "dark"
+                ? "rgba(20,16,15,0.93)"
+                : "rgba(251,247,246,0.96)",
+            backdropFilter: "blur(16px)",
+            borderTop: (t) => `1px solid ${t.palette.hairline}`,
+          }}
+        >
+          <Container maxWidth="sm" disableGutters>
+            <Box sx={{ display: "flex", p: 1 }}>
+              {NAV.map((item, index) => {
+                const active = index === activeIndex;
+                return (
+                  <ButtonBase
+                    key={item.to}
+                    onClick={() => navigate(item.to)}
+                    aria-current={active ? "page" : undefined}
                     sx={{
-                      width: 16,
-                      height: 2,
-                      borderRadius: 99,
-                      bgcolor: active ? "primary.main" : "transparent",
-                      transition: "background-color .16s linear",
-                    }}
-                  />
-                  <Typography
-                    component="span"
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: active ? "text.primary" : "textMute",
-                      transition: "color .16s linear",
+                      flex: 1,
+                      height: 50,
+                      flexDirection: "column",
+                      gap: "6px",
+                      borderRadius: '10px',
                     }}
                   >
-                    {item.label}
-                    <UnreadChip count={navUnread[item.to] ?? 0} />
-                  </Typography>
-                </ButtonBase>
-              );
-            })}
-          </Box>
-        </Container>
-      </Box>
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 2,
+                        borderRadius: 99,
+                        bgcolor: active ? "primary.main" : "transparent",
+                        transition: "background-color .16s linear",
+                      }}
+                    />
+                    <Typography
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: active ? "text.primary" : "textMute",
+                        transition: "color .16s linear",
+                      }}
+                    >
+                      {item.label}
+                      <UnreadChip count={navUnread[item.to] ?? 0} />
+                    </Typography>
+                  </ButtonBase>
+                );
+              })}
+            </Box>
+          </Container>
+        </Box>
+      )}
     </Box>
   );
 }

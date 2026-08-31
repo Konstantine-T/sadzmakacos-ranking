@@ -378,6 +378,19 @@ export function errorToKa(message: string | undefined): string {
   if (message.includes("single_choice_only")) return ka.errors.pollSingleChoice;
   if (message.includes("too_few_options")) return ka.errors.pollTooFewOptions;
   if (message.includes("too_many_options")) return ka.errors.pollTooManyOptions;
+  if (message.includes("week_closed")) return ka.trivia.errors.weekClosed;
+  // A repeat answer trips the (question_id, member_id) primary key rather than
+  // a named guard, so it's matched on the constraint name — the generic
+  // "duplicate key" text would also catch unrelated constraint violations
+  // elsewhere in the app and mislabel them as an already-answered question.
+  if (message.includes("trivia_answers_pkey")) return ka.trivia.errors.alreadyAnswered;
+  /*
+    no_such_question and bad_choice are raised by answer_trivia() too, but are
+    left unmapped on purpose. The client only ever sends a question id it just
+    rendered and a choice index within that question's own options array, so
+    either one reaching here means a bug, not something a member did — a
+    Georgian string for it would dress the bug up as an expected outcome.
+  */
   if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
     return ka.errors.offline;
   }
