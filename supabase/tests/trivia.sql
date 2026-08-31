@@ -11,12 +11,21 @@
 -- The admin plays this game. That is why there is no `or public.is_admin()`
 -- clause anywhere in trivia's RLS, unlike votes and post_votes.
 --
--- Run with:
+-- Run either way:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/trivia.sql
--- A clean run prints only PASS lines. Any FAIL aborts.
+--   or paste the whole file into the Supabase SQL editor.
+--
+-- A clean run prints nine PASS notices and changes nothing — every path ends at
+-- the ROLLBACK on the last line.
+--
+-- Note there is no `\set ON_ERROR_STOP on` here, unlike the older suites in this
+-- directory. Backslash commands are psql meta-commands, not SQL: the Supabase
+-- editor sends statements straight to the server and rejects them with a syntax
+-- error at the backslash. It is redundant anyway — the psql invocation above
+-- passes -v ON_ERROR_STOP=1 on the command line, and every failure below is a
+-- `raise exception`, which aborts the transaction on its own either way.
 -- ============================================================================
 
-\set ON_ERROR_STOP on
 begin;
 
 -- ---------------------------------------------------------------- setup ----
