@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Box, Button, Stack, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/CloseRounded';
+import { useWideLayout } from '@/app/layout';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useToast } from '@/app/providers/ToastProvider';
 import { Splash } from '@/components/Splash';
@@ -21,6 +22,15 @@ import { ka } from '@/i18n/ka';
 export function TriviaTestPage() {
   const navigate = useNavigate();
   const { member } = useAuth();
+  const wide = useWideLayout();
+
+  /**
+   * The runner owns the whole screen only on a phone, where AppShell strips its
+   * top bar and nav for this route. Wide, that chrome stays — so a forced 100dvh
+   * here is a viewport's worth of height BELOW the bar, and the option list's
+   * `flex: 1` expands into it and pushes დადასტურება off the bottom.
+   */
+  const fullHeight = wide ? undefined : '100dvh';
   const { toastError } = useToast();
 
   const weekQuery = useOpenWeek();
@@ -79,7 +89,7 @@ export function TriviaTestPage() {
   // would spin the Splash forever instead of ever reaching the empty state.
   if (!weekQuery.data) {
     return (
-      <Stack sx={{ minHeight: '100dvh' }}>
+      <Stack sx={{ minHeight: fullHeight }}>
         {header}
         <Box sx={{ p: 2 }}>
           <Alert severity="warning" sx={{ borderRadius: '12px' }}>
@@ -97,7 +107,7 @@ export function TriviaTestPage() {
 
   if (list.length === 0) {
     return (
-      <Stack sx={{ minHeight: '100dvh' }}>
+      <Stack sx={{ minHeight: fullHeight }}>
         {header}
         <Box sx={{ p: 2 }}>
           <Alert severity="info" sx={{ borderRadius: '12px' }}>
@@ -112,7 +122,7 @@ export function TriviaTestPage() {
 
   if (done) {
     return (
-      <Stack sx={{ minHeight: '100dvh' }}>
+      <Stack sx={{ minHeight: fullHeight }}>
         {header}
         <Stack spacing={2} sx={{ p: 3, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Typography variant="h2">{ka.trivia.finished.title}</Typography>
@@ -140,7 +150,7 @@ export function TriviaTestPage() {
   });
 
   return (
-    <Stack sx={{ minHeight: '100dvh' }}>
+    <Stack sx={{ minHeight: fullHeight }}>
       {header}
 
       <Stack direction="row" spacing="3px" sx={{ px: 2, pb: 1.5 }}>
