@@ -10,6 +10,8 @@ import { useRealtime } from '@/features/realtime/useRealtime';
 import { ScoreScopeTabs } from '@/features/trivia/ScoreScopeTabs';
 import { TriviaBoard } from '@/features/trivia/TriviaBoard';
 import { TriviaGameCard } from '@/features/trivia/TriviaGameCard';
+import { SnakeGameCard } from '@/features/snake/SnakeGameCard';
+import { useSnakeBoard } from '@/features/snake/api';
 import {
   useMyAnswers,
   useTriviaAllTimeBoard,
@@ -54,6 +56,7 @@ export function TriviaPage() {
   const answers = useMyAnswers(weekId, member?.id);
   const weekBoard = useTriviaWeekBoard(weekId);
   const allTime = useTriviaAllTimeBoard();
+  const snake = useSnakeBoard();
 
   const answeredCount = useMemo(() => {
     const ids = new Set((questions.data ?? []).map((q) => q.id));
@@ -90,11 +93,20 @@ export function TriviaPage() {
               <Skeleton variant="rounded" height={54} sx={{ borderRadius: '16px' }} />
             </Stack>
           ) : (
-            <TriviaGameCard
-              answered={answeredCount}
-              total={questions.data?.length ?? 0}
-              onOpen={() => navigate('/trivia/skills')}
-            />
+            <Stack spacing={1.25}>
+              <TriviaGameCard
+                answered={answeredCount}
+                total={questions.data?.length ?? 0}
+                onOpen={() => navigate('/trivia/skills')}
+              />
+              {/* Snake is a game, not a trivia round — its scores never reach
+                  ტრივიას რანკი. It shares this list and nothing else. */}
+              <SnakeGameCard
+                topScore={snake.rows[0]?.best_score ?? 0}
+                myBest={snake.rows.find((r) => r.member_id === member?.id)?.best_score}
+                onOpen={() => navigate('/trivia/snake')}
+              />
+            </Stack>
           )
         ) : (
           <Stack spacing={1.5}>

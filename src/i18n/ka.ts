@@ -264,13 +264,29 @@ export const ka = {
     postVoteMany: (n: number) => `შენს პოსტს ${n} ხმა`,
   },
 
+  snake: {
+    name: "სნეიკი",
+    subtitle: "სულელური თამაში",
+    start: "თამაშის დაწყება",
+    again: "თავიდან",
+    board: "საუკეთესო შედეგები",
+    empty: "ჯერ არავის უთამაშია",
+    score: "ქულა",
+    best: "რეკორდი",
+    plays: (n: number) => `${n} თამაში`,
+    over: "თამაში დასრულდა",
+    newRecord: "ახალი რეკორდი!",
+    hint: "გადაფურცლე მიმართულების შესაცვლელად",
+    hintDesktop: "ისრები ან WASD",
+    close: "დახურვა",
+  },
+
   trivia: {
     title: "ტრივია",
     games: "თამაშები",
     rank: "ტრივიას რანკი",
     thisWeek: "ეს კვირა",
     allTime: "საერთო",
-    soon: "სხვა თამაშები მალე",
 
     skills: {
       name: "უნარების ტესტები",

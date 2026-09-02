@@ -10,6 +10,7 @@ import { MemberPage } from '@/pages/MemberPage';
 import { MePage } from '@/pages/MePage';
 import { TriviaPage } from '@/pages/TriviaPage';
 import { TriviaTestPage } from '@/pages/TriviaTestPage';
+import { SnakePage } from '@/pages/SnakePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { PendingPage } from '@/pages/PendingPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -45,6 +46,7 @@ export function AppRoutes() {
         <Route path="weeks/:id" element={<WeekPage />} />
         <Route path="trivia" element={<TriviaPage />} />
         <Route path="trivia/skills" element={<TriviaTestPage />} />
+        <Route path="trivia/snake" element={<SnakePage />} />
         {/* All-time is a scope on the board now, not a page. Old links still land. */}
         <Route path="all-time" element={<Navigate to="/" replace />} />
         <Route path="members/:id" element={<MemberPage />} />

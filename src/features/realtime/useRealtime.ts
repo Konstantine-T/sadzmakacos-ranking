@@ -8,6 +8,7 @@ import { pollKeys } from '@/features/polls/api';
 import { weekKeys } from '@/features/week/api';
 import { notificationKeys } from '@/features/notifications/api';
 import { triviaKeys } from '@/features/trivia/api';
+import { snakeKeys } from '@/features/snake/api';
 
 type Signal =
   | 'votes'
@@ -17,7 +18,8 @@ type Signal =
   | 'posts'
   | 'polls'
   | 'weeks'
-  | 'trivia';
+  | 'trivia'
+  | 'snake';
 
 const DEBOUNCE_MS = 400;
 
@@ -63,6 +65,9 @@ export function useRealtime(weekId: number | undefined) {
       }
       if (signals.has('polls')) {
         queryClient.invalidateQueries({ queryKey: pollKeys.active });
+      }
+      if (signals.has('snake')) {
+        queryClient.invalidateQueries({ queryKey: snakeKeys.board });
       }
       if (signals.has('trivia')) {
         queryClient.invalidateQueries({ queryKey: triviaKeys.weekBoard(weekId) });
@@ -110,6 +115,14 @@ export function useRealtime(weekId: number | undefined) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'trivia_events' },
         () => schedule('trivia'),
+      )
+      // snake_scores is subscribed to DIRECTLY, unlike votes and trivia answers.
+      // Every column in it is already on the leaderboard for everybody, so there
+      // is no identity to protect and no event table to hide behind.
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'snake_scores' },
+        () => schedule('snake'),
       )
       .on(
         'postgres_changes',
