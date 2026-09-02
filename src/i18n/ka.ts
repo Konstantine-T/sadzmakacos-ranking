@@ -258,15 +258,16 @@ export const ka = {
     rankFirst: (to: number) => `ახლა #${to} ხარ`,
     reactionOne: (emoji: string) => `ვიღაცამ ${emoji} დაარეაქცია`,
     reactionMany: (n: number) => `${n} ახალი რეაქცია`,
-    postReactionOne: (emoji: string) => `ვიღაცამ ${emoji} დაარეაქცია შენს პოსტს`,
+    postReactionOne: (emoji: string) =>
+      `ვიღაცამ ${emoji} დაარეაქცია შენს პოსტს`,
     postReactionMany: (n: number) => `შენს პოსტს ${n} რეაქცია`,
     postVoteOne: "ვიღაცამ ხმა მისცა შენს პოსტს",
     postVoteMany: (n: number) => `შენს პოსტს ${n} ხმა`,
   },
 
   snake: {
-    name: "სნეიკი",
-    subtitle: "სულელური თამაში",
+    name: "Snake",
+    subtitle: "უბრალოდ სნეიქი",
     start: "თამაშის დაწყება",
     again: "თავიდან",
     board: "საუკეთესო შედეგები",
@@ -294,7 +295,8 @@ export const ka = {
       start: "დაწყება",
       resume: "გაგრძელება",
       done: "დასრულებულია",
-      progress: (answered: number, total: number) => `${answered}/${total} პასუხი`,
+      progress: (answered: number, total: number) =>
+        `${answered}/${total} პასუხი`,
     },
 
     confirm: "დადასტურება",
@@ -304,7 +306,8 @@ export const ka = {
 
     finished: {
       title: "ტესტი დასრულებულია",
-      score: (correct: number, total: number) => `${correct} სწორი ${total}-დან`,
+      score: (correct: number, total: number) =>
+        `${correct} სწორი ${total}-დან`,
       back: "ტრივიაზე დაბრუნება",
     },
 
@@ -396,7 +399,8 @@ export function errorToKa(message: string | undefined): string {
   // a named guard, so it's matched on the constraint name — the generic
   // "duplicate key" text would also catch unrelated constraint violations
   // elsewhere in the app and mislabel them as an already-answered question.
-  if (message.includes("trivia_answers_pkey")) return ka.trivia.errors.alreadyAnswered;
+  if (message.includes("trivia_answers_pkey"))
+    return ka.trivia.errors.alreadyAnswered;
   /*
     no_such_question and bad_choice are raised by answer_trivia() too, but are
     left unmapped on purpose. The client only ever sends a question id it just
