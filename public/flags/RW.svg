@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 513 342"><path fill="#00A5E0" d="M0 0h513v171H0z"/><path fill="#F9D202" d="M0 171h513v85.5H0z"/><path fill="#1E5F3D" d="M0 256.5h513V342H0z"/><path fill="#F9D202" d="m420.6 36.1 2.3 35.9 11.6-34.1-7 35.3 19.9-29.9-15.8 32.2 27-23.7-23.7 27L467.1 63l-29.9 19.9 35.3-7-34.1 11.6 35.9 2.3-35.9 2.3 34.1 11.6-35.3-7 29.9 19.9-32.2-15.8 23.7 27-27-23.7 15.8 32.2-19.9-29.9 7 35.3-11.6-34.1-2.3 35.9-2.3-35.9-11.6 34.1 7-35.3-19.9 29.9 15.8-32.2-27 23.7 23.7-27-32.2 15.8L404 96.7l-35.3 7 34.1-11.6-35.9-2.3 35.9-2.3-34.1-11.6 35.3 7L374.1 63l32.2 15.8-23.7-27 27 23.7-15.8-32.2 19.9 29.9-7-35.3L418.3 72z"/><circle fill="#F9D202" stroke="#00A5E0" stroke-width="2" cx="420.6" cy="89.8" r="15.9"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="flag-icons-rw" viewBox="0 0 640 480">
+  <path fill="#20603d" d="M0 0h640v480H0z"/>
+  <path fill="#fad201" d="M0 0h640v360H0z"/>
+  <path fill="#00a1de" d="M0 0h640v240H0z"/>
+  <g transform="translate(511 125.4)scale(.66667)">
+    <g id="rw-b">
+      <path id="rw-a" fill="#e5be01" d="M116.1 0 35.7 4.7l76.4 25.4-78.8-16.3L100.6 58l-72-36.2L82 82.1 21.9 28.6l36.2 72-44.3-67.3L30 112 4.7 35.7 0 116.1-1-1z"/>
+      <use xlink:href="#rw-a" width="100%" height="100%" transform="scale(1 -1)"/>
+    </g>
+    <use xlink:href="#rw-b" width="100%" height="100%" transform="scale(-1 1)"/>
+    <circle r="34.3" fill="#e5be01" stroke="#00a1de" stroke-width="3.4"/>
+  </g>
+</svg>

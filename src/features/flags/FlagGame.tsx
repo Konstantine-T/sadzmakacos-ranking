@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Button, ButtonBase, Stack, Typography } from '@mui/material';
 import { ka } from '@/i18n/ka';
 import type { Country } from './countries';
@@ -28,18 +28,48 @@ interface FlagGameProps {
  * genuinely do repeat within a few picks, and a repeat mid-streak reads as a
  * bug even when it is not.
  */
+/** Warm the browser cache for a flag we are about to show. */
+function preload(round: FlagRound) {
+  const img = new Image();
+  img.src = flagSrc(round.answer.code);
+}
+
 export function FlagGame({ onGameOver }: FlagGameProps) {
   const recent = useRef<string[]>([]);
-  const [round, setRound] = useState<FlagRound>(() => nextRound());
+  const [round, setRound] = useState<FlagRound>(() => {
+    const first = nextRound();
+    recent.current = [first.answer.code];
+    return first;
+  });
   const [picked, setPicked] = useState<Country | null>(null);
   const [streak, setStreak] = useState(0);
   const [over, setOver] = useState(false);
 
+  /**
+   * One question is always prepared and its flag already fetched.
+   *
+   * Most flags are under a kilobyte, but the ones carrying a coat of arms are
+   * not — Serbia is 177KB, Mexico 83KB. Drawn on demand those arrive visibly
+   * late, and a flag that fades in after its four answer buttons is a worse
+   * question than one that appears whole.
+   */
+  const upcoming = useRef<FlagRound | null>(null);
+
+  useEffect(() => {
+    if (!upcoming.current) {
+      upcoming.current = nextRound(recent.current);
+      preload(upcoming.current);
+    }
+  }, []);
+
   const advance = useCallback(() => {
-    recent.current = [...recent.current, round.answer.code].slice(-RECENT_MEMORY);
-    setRound(nextRound(recent.current));
+    const next = upcoming.current ?? nextRound(recent.current);
+    recent.current = [...recent.current, next.answer.code].slice(-RECENT_MEMORY);
+    setRound(next);
     setPicked(null);
-  }, [round.answer.code]);
+    upcoming.current = nextRound(recent.current);
+    preload(upcoming.current);
+  }, []);
 
   const choose = (c: Country) => {
     if (picked) return; // the verdict is showing — the next tap is შემდეგი
@@ -53,11 +83,14 @@ export function FlagGame({ onGameOver }: FlagGameProps) {
   };
 
   const restart = () => {
-    recent.current = [];
-    setRound(nextRound());
+    const first = nextRound();
+    recent.current = [first.answer.code];
+    setRound(first);
     setPicked(null);
     setStreak(0);
     setOver(false);
+    upcoming.current = nextRound(recent.current);
+    preload(upcoming.current);
   };
 
   return (
