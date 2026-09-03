@@ -7,7 +7,7 @@ import { avatarUrl } from '@/lib/supabase';
 import { ka } from '@/i18n/ka';
 import type { Member } from '@/lib/database.types';
 import { DELTA, OPPOSITE, type Dir, type Point } from './direction';
-import { SnakePad } from './SnakePad';
+import { SnakeDpad } from './SnakeDpad';
 
 const GRID = 17; // cells per side — odd, so the snake starts dead centre
 const START_MS = 190;
@@ -228,7 +228,16 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
     const ny = head.y + d.y;
 
     const hitWall = nx < 0 || ny < 0 || nx >= GRID || ny >= GRID;
-    const hitSelf = snake.current.some((p, i) => i > 0 && p.x === nx && p.y === ny);
+
+    // The tail is only an obstacle if it is staying put. On any step where we
+    // are not eating, the last segment vacates its cell as the head enters, so
+    // moving into it is legal — counting it was a false game over that got more
+    // likely the longer the snake grew, and looked from the outside like dying
+    // having hit nothing at all.
+    const willEat = nx === food.current.x && ny === food.current.y;
+    const occupied = willEat ? snake.current : snake.current.slice(0, -1);
+    const hitSelf = occupied.some((p) => p.x === nx && p.y === ny);
+
     if (hitWall || hitSelf) {
       running.current = false;
       setOver(true);
@@ -237,7 +246,7 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
 
     prev.current = snake.current;
     const grown = [{ x: nx, y: ny }, ...snake.current];
-    if (nx === food.current.x && ny === food.current.y) {
+    if (willEat) {
       pop.current = { x: nx, y: ny, at: performance.now() };
       snake.current = grown;
       setScore((s) => s + 1);
@@ -254,14 +263,22 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
       if (!running.current) return;
       if (lastTick.current === 0) lastTick.current = now;
 
-      // Fixed logic step, variable render rate. A backgrounded tab returns with
-      // a huge delta, so cap the catch-up rather than running fifty ticks at once.
-      let guard = 0;
-      while (now - lastTick.current >= speed.current && running.current && guard++ < 4) {
+      // Fixed logic step, variable render rate — but AT MOST ONE STEP PER FRAME.
+      //
+      // This used to catch up by running up to four steps in a single frame.
+      // Phones throttle requestAnimationFrame constantly (a scroll, a
+      // notification, low power mode), so the frame after a stall would advance
+      // the snake four cells at once, applying only the first queued turn. From
+      // the player's side the snake teleported into a wall. Dropping the missed
+      // time is the right trade for an input-driven game: a stalled tab should
+      // lose a moment, never lose the run.
+      const elapsed = now - lastTick.current;
+      if (elapsed > speed.current * 3) {
+        lastTick.current = now; // stalled — resync, do not replay
+      } else if (elapsed >= speed.current) {
         lastTick.current += speed.current;
         step();
       }
-      if (guard >= 4) lastTick.current = now;
 
       const t = reduced
         ? 1
@@ -341,6 +358,11 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
   const turn = useCallback((d: Dir) => {
     // Queue rather than apply: two fast taps within one tick would otherwise
     // let you reverse into yourself through an intermediate direction.
+    //
+    // Filtered at enqueue rather than at dequeue, so repeated taps on the same
+    // arrow cannot fill the two slots and swallow the turn you actually need.
+    const last = queued.current[queued.current.length - 1] ?? dir.current;
+    if (d === last || d === OPPOSITE[last]) return;
     if (queued.current.length < 2) queued.current.push(d);
   }, []);
 
@@ -434,9 +456,9 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
         {wide ? ka.snake.hintDesktop : ka.snake.hint}
       </Typography>
 
-      {/* Phones only. The rail layout has a keyboard, and a thumb stick under a
+      {/* Phones only. The rail layout has a keyboard, and arrow keys under a
           desktop board would just be a toy taking up half the screen. */}
-      {!wide && <SnakePad onDirection={turn} />}
+      {!wide && <SnakeDpad onDirection={turn} />}
     </Stack>
   );
 }
