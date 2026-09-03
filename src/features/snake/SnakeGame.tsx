@@ -6,6 +6,8 @@ import { avatarColor, avatarInitial } from '@/lib/avatar';
 import { avatarUrl } from '@/lib/supabase';
 import { ka } from '@/i18n/ka';
 import type { Member } from '@/lib/database.types';
+import { DELTA, OPPOSITE, type Dir, type Point } from './direction';
+import { SnakePad } from './SnakePad';
 
 const GRID = 17; // cells per side — odd, so the snake starts dead centre
 const START_MS = 190;
@@ -13,16 +15,6 @@ const MIN_MS = 85;
 const SPEEDUP = 6; // ms shaved per avatar eaten
 const POP_MS = 260;
 
-type Point = { x: number; y: number };
-type Dir = 'up' | 'down' | 'left' | 'right';
-
-const DELTA: Record<Dir, Point> = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-};
-const OPPOSITE: Record<Dir, Dir> = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
 interface SnakeGameProps {
   /** Every active member — one of them is the food at any moment. */
@@ -310,7 +302,10 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
     const fit = () => {
       const box = canvas.parentElement;
       if (!box) return;
-      const css = Math.min(box.clientWidth, 460);
+      // Also bounded by viewport height, not just width: the thumb stick sits
+      // under the board and on a short phone a square canvas would push it off
+      // the screen — the one control you cannot play without.
+      const css = Math.min(box.clientWidth, 460, Math.round(window.innerHeight * 0.46));
       const dpr = window.devicePixelRatio || 1;
       canvas.width = css * dpr;
       canvas.height = css * dpr;
@@ -438,6 +433,10 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
       <Typography variant="caption" color="text.disabled" sx={{ textAlign: 'center' }}>
         {wide ? ka.snake.hintDesktop : ka.snake.hint}
       </Typography>
+
+      {/* Phones only. The rail layout has a keyboard, and a thumb stick under a
+          desktop board would just be a toy taking up half the screen. */}
+      {!wide && <SnakePad onDirection={turn} />}
     </Stack>
   );
 }
