@@ -11,6 +11,7 @@ import { MePage } from '@/pages/MePage';
 import { TriviaPage } from '@/pages/TriviaPage';
 import { TriviaTestPage } from '@/pages/TriviaTestPage';
 import { SnakePage } from '@/pages/SnakePage';
+import { FlagsPage } from '@/pages/FlagsPage';
 import { ChatPage } from '@/pages/ChatPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { PendingPage } from '@/pages/PendingPage';
@@ -47,6 +48,7 @@ export function AppRoutes() {
         <Route path="weeks/:id" element={<WeekPage />} />
         <Route path="trivia" element={<TriviaPage />} />
         <Route path="trivia/skills" element={<TriviaTestPage />} />
+        <Route path="trivia/flags" element={<FlagsPage />} />
         <Route path="trivia/snake" element={<SnakePage />} />
         <Route path="chat" element={<ChatPage />} />
         {/* All-time is a scope on the board now, not a page. Old links still land. */}

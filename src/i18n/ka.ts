@@ -282,6 +282,22 @@ export const ka = {
     delete: "წაშლა",
   },
 
+  flags: {
+    name: "გამოიცანი ქვეყანა დროშის მიხედვით",
+    short: "დროშები",
+    subtitle: "რამდენს გამოიცნობ ზედიზედ?",
+    start: "თამაშის დაწყება",
+    again: "თავიდან",
+    board: "საუკეთესო შედეგები",
+    empty: "ჯერ არავის უთამაშია",
+    streak: "ზედიზედ",
+    best: "რეკორდი",
+    plays: (n: number) => `${n} თამაში`,
+    over: "თამაში დასრულდა",
+    correctWas: (name: string) => `სწორი პასუხი: ${name}`,
+    close: "დახურვა",
+  },
+
   snake: {
     name: "Snake",
     subtitle: "უბრალოდ სნეიქი",

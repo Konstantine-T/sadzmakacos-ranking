@@ -9,6 +9,7 @@ import { weekKeys } from '@/features/week/api';
 import { notificationKeys } from '@/features/notifications/api';
 import { triviaKeys } from '@/features/trivia/api';
 import { snakeKeys } from '@/features/snake/api';
+import { flagKeys } from '@/features/flags/api';
 import { chatKeys } from '@/features/chat/api';
 
 type Signal =
@@ -21,6 +22,7 @@ type Signal =
   | 'weeks'
   | 'trivia'
   | 'snake'
+  | 'flags'
   | 'chat'
   | 'chat_reaction';
 
@@ -78,6 +80,9 @@ export function useRealtime(weekId: number | undefined) {
       }
       if (signals.has('chat_reaction')) {
         queryClient.invalidateQueries({ queryKey: chatKeys.reactions });
+      }
+      if (signals.has('flags')) {
+        queryClient.invalidateQueries({ queryKey: flagKeys.board });
       }
       if (signals.has('snake')) {
         queryClient.invalidateQueries({ queryKey: snakeKeys.board });
@@ -140,6 +145,11 @@ export function useRealtime(weekId: number | undefined) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'snake_scores' },
         () => schedule('snake'),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'flag_scores' },
+        () => schedule('flags'),
       )
       // `messages` is signed, so it is published and subscribed to directly.
       // `message_reactions` is select-own and never published — chat_events

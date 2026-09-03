@@ -308,6 +308,17 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      flag_scores: {
+        Row: {
+          member_id: string;
+          best_streak: number;
+          plays: number;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       snake_scores: {
         Row: {
           member_id: string;
@@ -514,6 +525,10 @@ export interface Database {
         Args: { p_message_id: number };
         Returns: undefined;
       };
+      submit_flag_score: {
+        Args: { p_streak: number };
+        Returns: number;
+      };
       submit_snake_score: {
         Args: { p_score: number };
         Returns: number;
@@ -570,6 +585,7 @@ export type TriviaQuestion = Tables<'trivia_questions'>;
 export type TriviaAnswer = Tables<'trivia_answers'>;
 export type TriviaResult = Tables<'trivia_results'>;
 export type SnakeScore = Tables<'snake_scores'>;
+export type FlagScore = Tables<'flag_scores'>;
 export type ChatMessage = Tables<'messages'>;
 export type MessageReactionCount = Views<'message_reaction_counts'>;
 export type TriviaEvent = Tables<'trivia_events'>;
