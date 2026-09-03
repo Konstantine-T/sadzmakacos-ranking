@@ -17,6 +17,7 @@ export const ka = {
     allTime: "საერთო",
     admin: "ადმინი",
     trivia: "ტრივია",
+    chat: "ჩატი",
     /** The wide layout has room to say where "back" goes. */
     backToRanking: "უკან რანკინგზე",
   },
@@ -265,6 +266,22 @@ export const ka = {
     postVoteMany: (n: number) => `შენს პოსტს ${n} ხმა`,
   },
 
+  chat: {
+    title: "ჩატი",
+    placeholder: "დაწერე რამე…",
+    send: "გაგზავნა",
+    empty: "ჯერ არავის უთქვამს არაფერი",
+    deleted: "შეტყობინება წაშლილია",
+    today: "დღეს",
+    yesterday: "გუშინ",
+    typingOne: (name: string) => `${name} წერს…`,
+    typingTwo: (a: string, b: string) => `${a} და ${b} წერენ…`,
+    typingMany: (n: number) => `${n} ადამიანი წერს…`,
+    newMessages: "ახალი შეტყობინებები",
+    tooLong: "შეტყობინება ძალიან გრძელია",
+    delete: "წაშლა",
+  },
+
   snake: {
     name: "Snake",
     subtitle: "უბრალოდ სნეიქი",
@@ -394,6 +411,7 @@ export function errorToKa(message: string | undefined): string {
   if (message.includes("single_choice_only")) return ka.errors.pollSingleChoice;
   if (message.includes("too_few_options")) return ka.errors.pollTooFewOptions;
   if (message.includes("too_many_options")) return ka.errors.pollTooManyOptions;
+  if (message.includes("too_long")) return ka.chat.tooLong;
   if (message.includes("week_closed")) return ka.trivia.errors.weekClosed;
   // A repeat answer trips the (question_id, member_id) primary key rather than
   // a named guard, so it's matched on the constraint name — the generic

@@ -211,8 +211,24 @@ the group, the fix, and what deliberately did not change.
 
 ## Non-goals (do not build)
 
+> **The chat is not a comment.** `20260903000100_chat.sql` adds a single group
+> room, which overturns the old "posts carry the conversation" reasoning behind
+> dropping comments — that was a deliberate change of mind, in
+> [2026-09-03](supabase/migrations/20260903000100_chat.sql). Comments stay
+> dropped: nothing threads onto a post, and a post is still one statement a week
+> that the group votes on. Two contracts run side by side in that migration and
+> must not be confused — **messages are signed** and published to realtime
+> whole, like `poll_answers`; **message reactions are anonymous**, select-own
+> behind an aggregate view, like `post_reactions`. Making chat reactions signed
+> would mean the same 🖕 is accountable on a message and not on a post.
+>
+> It is also the one place a second Supabase channel exists. `useRealtime.ts` is
+> still the only `postgres_changes` subscription; the chat's typing indicator
+> uses an ephemeral **presence** channel that carries no row changes, writes to
+> no cache, and unmounts with the screen.
+
 Email or push notifications · categories or multiple ranking dimensions ·
 images in posts · multiple friend groups · multiple admins · vote reasons ·
 seasons/resets · **comments of any kind** (the feature was dropped in
-`20260817000100_drop_comments.sql` — posts carry the conversation) · editing or
+`20260817000100_drop_comments.sql`) · editing or
 deleting your own post · public sharing outside the group.

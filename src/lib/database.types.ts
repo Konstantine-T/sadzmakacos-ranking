@@ -273,6 +273,41 @@ export interface Database {
         Relationships: [];
       };
       /** Identity-free realtime ping, exactly like vote_events / score_events. */
+      messages: {
+        Row: {
+          id: number;
+          author_id: string;
+          body: string;
+          created_at: string;
+          deleted_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      message_reactions: {
+        Row: {
+          message_id: number;
+          reactor_id: string;
+          emoji: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      chat_reads: {
+        Row: { member_id: string; last_read_at: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      chat_events: {
+        Row: { id: number; kind: 'reaction'; created_at: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       snake_scores: {
         Row: {
           member_id: string;
@@ -305,6 +340,11 @@ export interface Database {
     };
 
     Views: {
+      message_reaction_counts: {
+        Row: { message_id: number; emoji: string; count: number };
+        Relationships: [];
+      };
+
       live_standings: {
         Row: {
           week_id: number;
@@ -454,6 +494,26 @@ export interface Database {
 
       answer_poll: { Args: { p_poll_id: string; p_option_ids: string[] }; Returns: undefined };
       /** Grades server-side; the key comes back only after the write commits. */
+      send_message: {
+        Args: { p_body: string };
+        Returns: number;
+      };
+      toggle_message_reaction: {
+        Args: { p_message_id: number; p_emoji: string };
+        Returns: undefined;
+      };
+      mark_chat_read: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
+      chat_unread: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      admin_delete_message: {
+        Args: { p_message_id: number };
+        Returns: undefined;
+      };
       submit_snake_score: {
         Args: { p_score: number };
         Returns: number;
@@ -510,6 +570,8 @@ export type TriviaQuestion = Tables<'trivia_questions'>;
 export type TriviaAnswer = Tables<'trivia_answers'>;
 export type TriviaResult = Tables<'trivia_results'>;
 export type SnakeScore = Tables<'snake_scores'>;
+export type ChatMessage = Tables<'messages'>;
+export type MessageReactionCount = Views<'message_reaction_counts'>;
 export type TriviaEvent = Tables<'trivia_events'>;
 export type TriviaWeekScore = Views<'trivia_week_scores'>;
 export type TriviaTotal = Views<'trivia_totals'>;

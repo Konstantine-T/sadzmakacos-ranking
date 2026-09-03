@@ -13,6 +13,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
+import { useChatUnread } from "@/features/chat/api";
 import { ka } from "@/i18n/ka";
 import { useOpenWeek, useTurnout } from "@/features/week/api";
 import { NotificationBell } from "@/features/notifications/NotificationBell";
@@ -26,6 +27,7 @@ import { formatDay } from "@/lib/time";
 const NAV = [
   { to: "/", label: ka.nav.ranking },
   { to: "/posts", label: ka.nav.posts },
+  { to: "/chat", label: ka.nav.chat },
   { to: "/trivia", label: ka.nav.trivia },
   { to: "/weeks", label: ka.nav.archive },
   { to: "/me", label: ka.nav.profile },
@@ -38,6 +40,7 @@ const NAV = [
 const TITLES = [
   ka.standings.title,
   ka.posts.title,
+  ka.nav.chat,
   ka.trivia.title,
   ka.archive.title,
   ka.nav.profile,
@@ -55,6 +58,17 @@ function isDetailRoute(path: string) {
  * viewport and supplies its own header and its own bottom button, so the
  * shell's top bar and nav would be a second set of both.
  */
+/**
+ * Routes that must fit the viewport exactly instead of growing with content.
+ *
+ * A chat pins its composer to the bottom and scrolls only its message list, so
+ * it needs a bounded height rather than the shell's usual "as tall as it needs
+ * to be". Everything else stays exactly as it was.
+ */
+function isFullHeightRoute(path: string) {
+  return path.startsWith("/chat");
+}
+
 function isImmersiveRoute(path: string) {
   return path.startsWith("/trivia/skills");
 }
@@ -71,9 +85,10 @@ export function AppShell() {
     const path = location.pathname;
     if (path === "/") return 0;
     if (path.startsWith("/posts")) return 1;
-    if (path.startsWith("/trivia")) return 2;
-    if (path.startsWith("/weeks")) return 3;
-    if (path.startsWith("/me") || path.startsWith("/members")) return 4;
+    if (path.startsWith("/chat")) return 2;
+    if (path.startsWith("/trivia")) return 3;
+    if (path.startsWith("/weeks")) return 4;
+    if (path.startsWith("/me") || path.startsWith("/members")) return 5;
     return -1;
   }, [location.pathname]);
 
@@ -83,10 +98,15 @@ export function AppShell() {
    * both at once.
    */
   const { counts } = useUnreadCounts();
-  const navUnread: Record<string, number> = { "/posts": counts.post };
+  const chatUnread = useChatUnread();
+  const navUnread: Record<string, number> = {
+    "/posts": counts.post,
+    "/chat": chatUnread.data ?? 0,
+  };
 
   const detail = isDetailRoute(location.pathname);
   const immersive = isImmersiveRoute(location.pathname);
+  const fullHeight = isFullHeightRoute(location.pathname);
   const live =
     !detail &&
     week.data !== null &&
@@ -212,9 +232,16 @@ export function AppShell() {
               px: 3.5,
               pt: 3,
               pb: 5,
+              ...(fullHeight && {
+                // 64px is the sticky header above; the rest is the chat's.
+                height: "calc(100dvh - 64px)",
+                minHeight: 0,
+                pb: 0,
+                alignItems: "stretch",
+              }),
             }}
           >
-            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Box sx={{ flexGrow: 1, minWidth: 0, ...(fullHeight && { minHeight: 0 }) }}>
               <Outlet />
             </Box>
 
@@ -232,7 +259,14 @@ export function AppShell() {
 
   // ---------------------------------------------------------------- phone ---
   return (
-    <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+    <Box
+      sx={{
+        minHeight: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        ...(fullHeight && { height: "100dvh", overflow: "hidden" }),
+      }}
+    >
       {!immersive && (
         <AppBar
           position="sticky"
@@ -322,6 +356,9 @@ export function AppShell() {
           ...(!immersive && {
             pb: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom) + 16px)`,
           }),
+          // A bounded box the chat can fill; the pb above still reserves the
+          // fixed bottom nav, so the composer sits above it rather than under.
+          ...(fullHeight && { minHeight: 0, overflow: "hidden" }),
         }}
       >
         <Outlet />

@@ -9,6 +9,7 @@ import { weekKeys } from '@/features/week/api';
 import { notificationKeys } from '@/features/notifications/api';
 import { triviaKeys } from '@/features/trivia/api';
 import { snakeKeys } from '@/features/snake/api';
+import { chatKeys } from '@/features/chat/api';
 
 type Signal =
   | 'votes'
@@ -19,7 +20,9 @@ type Signal =
   | 'polls'
   | 'weeks'
   | 'trivia'
-  | 'snake';
+  | 'snake'
+  | 'chat'
+  | 'chat_reaction';
 
 const DEBOUNCE_MS = 400;
 
@@ -37,7 +40,10 @@ export function useRealtime(weekId: number | undefined) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (weekId === undefined) return;
+    // No early return on a missing week. The chat is not week-scoped, and
+    // bailing here meant /chat subscribed to nothing at all — messages only
+    // appeared on a refetch. Week-scoped invalidations are guarded individually
+    // below instead.
 
     const pending = new Set<Signal>();
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -46,31 +52,40 @@ export function useRealtime(weekId: number | undefined) {
       const signals = new Set(pending);
       pending.clear();
 
-      if (signals.has('votes')) {
+      if (signals.has('votes') && weekId !== undefined) {
         queryClient.invalidateQueries({ queryKey: standingsKeys.live(weekId) });
         queryClient.invalidateQueries({ queryKey: weekKeys.turnout(weekId) });
       }
-      if (signals.has('post_vote')) {
+      if (signals.has('post_vote') && weekId !== undefined) {
         queryClient.invalidateQueries({ queryKey: postKeys.scores(weekId) });
       }
-      if (signals.has('post_reaction')) {
+      if (signals.has('post_reaction') && weekId !== undefined) {
         queryClient.invalidateQueries({ queryKey: reactionKeys.postCounts(weekId) });
       }
-      if (signals.has('member_reaction')) {
+      if (signals.has('member_reaction') && weekId !== undefined) {
         queryClient.invalidateQueries({ queryKey: reactionKeys.memberCounts(weekId) });
       }
-      if (signals.has('posts')) {
+      if (signals.has('posts') && weekId !== undefined) {
         queryClient.invalidateQueries({ queryKey: postKeys.list(weekId) });
         queryClient.invalidateQueries({ queryKey: postKeys.scores(weekId) });
       }
       if (signals.has('polls')) {
         queryClient.invalidateQueries({ queryKey: pollKeys.active });
       }
+      if (signals.has('chat')) {
+        queryClient.invalidateQueries({ queryKey: chatKeys.messages });
+        queryClient.invalidateQueries({ queryKey: chatKeys.unread });
+      }
+      if (signals.has('chat_reaction')) {
+        queryClient.invalidateQueries({ queryKey: chatKeys.reactions });
+      }
       if (signals.has('snake')) {
         queryClient.invalidateQueries({ queryKey: snakeKeys.board });
       }
       if (signals.has('trivia')) {
-        queryClient.invalidateQueries({ queryKey: triviaKeys.weekBoard(weekId) });
+        if (weekId !== undefined) {
+          queryClient.invalidateQueries({ queryKey: triviaKeys.weekBoard(weekId) });
+        }
         queryClient.invalidateQueries({ queryKey: triviaKeys.allTime });
       }
       /*
@@ -91,7 +106,9 @@ export function useRealtime(weekId: number | undefined) {
         queryClient.invalidateQueries({ queryKey: weekKeys.open });
         queryClient.invalidateQueries({ queryKey: weekKeys.all });
         queryClient.invalidateQueries({ queryKey: standingsKeys.prevRanks });
-        queryClient.invalidateQueries({ queryKey: standingsKeys.live(weekId) });
+        if (weekId !== undefined) {
+          queryClient.invalidateQueries({ queryKey: standingsKeys.live(weekId) });
+        }
       }
     };
 
@@ -123,6 +140,19 @@ export function useRealtime(weekId: number | undefined) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'snake_scores' },
         () => schedule('snake'),
+      )
+      // `messages` is signed, so it is published and subscribed to directly.
+      // `message_reactions` is select-own and never published — chat_events
+      // carries an identity-free ping for it, exactly as vote_events does.
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'messages' },
+        () => schedule('chat'),
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_events' },
+        () => schedule('chat_reaction'),
       )
       .on(
         'postgres_changes',

@@ -31,6 +31,16 @@ export function formatDateTime(value: string) {
 }
 
 /** "24 აგვ" — compact, for table cells and chips. */
+/** Wall-clock time in Tbilisi. Used per message in the chat. */
+export function formatClock(value: string) {
+  return tb(value).format('HH:mm');
+}
+
+/** The day a message belongs to, for the separators between them. */
+export function dayKey(value: string) {
+  return tb(value).format('YYYY-MM-DD');
+}
+
 export function formatShort(value: string) {
   return tb(value).format('D MMM');
 }
