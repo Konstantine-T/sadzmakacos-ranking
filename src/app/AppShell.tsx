@@ -241,7 +241,17 @@ export function AppShell() {
               }),
             }}
           >
-            <Box sx={{ flexGrow: 1, minWidth: 0, ...(fullHeight && { minHeight: 0 }) }}>
+            <Box
+              sx={{
+                flexGrow: 1,
+                minWidth: 0,
+                ...(fullHeight && {
+                  minHeight: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                }),
+              }}
+            >
               <Outlet />
             </Box>
 
@@ -358,7 +368,12 @@ export function AppShell() {
           }),
           // A bounded box the chat can fill; the pb above still reserves the
           // fixed bottom nav, so the composer sits above it rather than under.
-          ...(fullHeight && { minHeight: 0, overflow: "hidden" }),
+          ...(fullHeight && {
+            minHeight: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }),
         }}
       >
         <Outlet />

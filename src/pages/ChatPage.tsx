@@ -126,8 +126,8 @@ export function ChatPage() {
           : ka.chat.typingMany(typing.length);
 
   return (
-    <PageTransition>
-      <Stack sx={{ height: '100%', minHeight: 0 }}>
+    <PageTransition fill>
+      <Stack sx={{ flex: 1, minHeight: 0 }}>
         <Box
           ref={scroller}
           onScroll={(e) => {
