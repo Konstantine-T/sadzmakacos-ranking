@@ -51,6 +51,8 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
   const wide = useWideLayout();
   const reduced = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  /** The flex cell the board is allowed to fill. */
+  const slotRef = useRef<HTMLDivElement | null>(null);
   const [score, setScore] = useState(0);
   const [over, setOver] = useState(false);
 
@@ -108,11 +110,16 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
       ctx.fillStyle = '#14100F';
       ctx.fillRect(0, 0, size, size);
 
-      // faint grid, so motion has something to read against
+      // Faint grid, so motion has something to read against.
+      //
+      // Snapped to DEVICE pixels, not CSS ones. The old `Math.round(x) + 0.5`
+      // centres a line on a CSS half-pixel, which is only a real pixel boundary
+      // at dpr 1 — at 2.75 the lines land between pixels, come out blurry, and
+      // sit at visibly uneven intervals.
       ctx.strokeStyle = 'rgba(255,255,255,0.028)';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1 / dpr;
       for (let i = 1; i < GRID; i++) {
-        const p = Math.round(i * cell) + 0.5;
+        const p = (Math.round((i * cell * dpr) / 1) + 0.5) / dpr;
         ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, size); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, p); ctx.lineTo(size, p); ctx.stroke();
       }
@@ -312,27 +319,48 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
     raf.current = requestAnimationFrame(loop);
   }, [loop, placeFood]);
 
-  // size the canvas to its box, at device resolution so it is not soft
+  /**
+   * Size the board to the space actually left for it.
+   *
+   * This used to guess — 46% of the viewport height — which knew nothing about
+   * the arrows underneath it, so on a shorter phone the bottom arrow ended up
+   * beneath the nav bar. The slot is measured instead: whatever height the flex
+   * column leaves is what the board gets, and the controls are always on screen
+   * because they were laid out first.
+   *
+   * The size is chosen in DEVICE pixels and the CSS size derived from it, not
+   * the other way round. `css * dpr` at Android's fractional ratios (2.75 is
+   * common) gives a fractional backing store that the browser truncates, so the
+   * canvas ends up displayed at a slightly different scale than it was drawn —
+   * every cell drifts a fraction and the grid looks crooked.
+   */
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const slot = slotRef.current;
+    if (!canvas || !slot) return;
+
     const fit = () => {
-      const box = canvas.parentElement;
-      if (!box) return;
-      // Also bounded by viewport height, not just width: the thumb stick sits
-      // under the board and on a short phone a square canvas would push it off
-      // the screen — the one control you cannot play without.
-      const css = Math.min(box.clientWidth, 460, Math.round(window.innerHeight * 0.46));
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = css * dpr;
-      canvas.height = css * dpr;
-      canvas.style.width = `${css}px`;
-      canvas.style.height = `${css}px`;
+      const avail = Math.min(slot.clientWidth, slot.clientHeight, 460);
+      if (avail <= 0) return;
+      // A whole number of device pixels, and a multiple of the grid so every
+      // cell is the same integer size.
+      const device = Math.max(GRID, Math.floor((avail * dpr) / GRID) * GRID);
+      canvas.width = device;
+      canvas.height = device;
+      canvas.style.width = `${device / dpr}px`;
+      canvas.style.height = `${device / dpr}px`;
       draw(1, performance.now());
     };
+
     fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(slot);
     window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', fit);
+    };
   }, [draw]);
 
   useEffect(() => {
@@ -397,7 +425,7 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
   };
 
   return (
-    <Stack spacing={1.5} alignItems="center" sx={{ width: '100%' }}>
+    <Stack spacing={1.25} alignItems="center" sx={{ flex: 1, minHeight: 0, width: '100%' }}>
       <Stack
         direction="row"
         alignItems="baseline"
@@ -412,12 +440,23 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
         </Typography>
       </Stack>
 
+      {/* The slot the board is measured against. It takes whatever height is
+          left after the score line, the hint and the arrows, so the controls
+          can never be pushed off the bottom of the screen. */}
+      <Box
+        ref={slotRef}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
       <Box
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         sx={{
-          width: '100%',
-          maxWidth: 460,
           position: 'relative',
           borderRadius: '16px',
           overflow: 'hidden',
@@ -450,6 +489,7 @@ export function SnakeGame({ members, onGameOver }: SnakeGameProps) {
             </Button>
           </Stack>
         )}
+      </Box>
       </Box>
 
       <Typography variant="caption" color="text.disabled" sx={{ textAlign: 'center' }}>

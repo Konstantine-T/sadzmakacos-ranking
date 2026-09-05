@@ -66,7 +66,9 @@ function isDetailRoute(path: string) {
  * to be". Everything else stays exactly as it was.
  */
 function isFullHeightRoute(path: string) {
-  return path.startsWith("/chat");
+  // The chat pins a composer; snake must keep its arrows on screen. Both own
+  // their scrolling and neither may grow past the viewport.
+  return path.startsWith("/chat") || path.startsWith("/trivia/snake");
 }
 
 function isImmersiveRoute(path: string) {

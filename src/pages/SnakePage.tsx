@@ -29,8 +29,8 @@ export function SnakePage() {
   const mine = board.rows.find((r) => r.member_id === member?.id);
 
   return (
-    <PageTransition>
-      <Stack spacing={2} sx={{ p: 2, pt: 1.75 }}>
+    <PageTransition fill>
+      <Stack spacing={2} sx={{ flex: 1, minHeight: 0, p: 2, pt: 1.75 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography variant="h2">{ka.snake.name}</Typography>
           <Button
@@ -55,7 +55,7 @@ export function SnakePage() {
           />
         ) : (
           <>
-            <Stack spacing={0.75}>
+            <Stack spacing={0.75} sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               <Typography variant="caption" color="text.secondary">
                 {ka.snake.board}
               </Typography>
