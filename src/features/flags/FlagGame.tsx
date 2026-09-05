@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Button, ButtonBase, Stack, Typography } from '@mui/material';
 import { ka } from '@/i18n/ka';
 import type { Country } from './countries';
-import { nextRound, RECENT_MEMORY, type FlagRound } from './round';
+import { nextRound, PERFECT, type FlagRound } from './round';
 
 /**
  * The flag for a country, served from public/flags/ (see scripts/sync-flags.mjs).
@@ -35,15 +35,24 @@ function preload(round: FlagRound) {
 }
 
 export function FlagGame({ onGameOver }: FlagGameProps) {
-  const recent = useRef<string[]>([]);
+  /**
+   * EVERY country asked this run, not a sliding window.
+   *
+   * A country appears at most once per game, which is what makes a perfect run
+   * finite and reachable — and what stops a long streak being mostly a memory
+   * test of the last few minutes.
+   */
+  const used = useRef<string[]>([]);
   const [round, setRound] = useState<FlagRound>(() => {
-    const first = nextRound();
-    recent.current = [first.answer.code];
+    const first = nextRound()!; // a full pool always yields a round
+    used.current = [first.answer.code];
     return first;
   });
   const [picked, setPicked] = useState<Country | null>(null);
   const [streak, setStreak] = useState(0);
   const [over, setOver] = useState(false);
+  /** Ran out of countries rather than getting one wrong. */
+  const [won, setWon] = useState(false);
 
   /**
    * One question is always prepared and its flag already fetched.
@@ -55,42 +64,58 @@ export function FlagGame({ onGameOver }: FlagGameProps) {
    */
   const upcoming = useRef<FlagRound | null>(null);
 
+  const primed = useRef(false);
   useEffect(() => {
-    if (!upcoming.current) {
-      upcoming.current = nextRound(recent.current);
-      preload(upcoming.current);
+    if (!primed.current) {
+      primed.current = true;
+      upcoming.current = nextRound(used.current);
+      if (upcoming.current) preload(upcoming.current);
     }
   }, []);
 
   const advance = useCallback(() => {
-    const next = upcoming.current ?? nextRound(recent.current);
-    recent.current = [...recent.current, next.answer.code].slice(-RECENT_MEMORY);
+    const next = upcoming.current;
+    if (!next) return; // the last flag was already handled in choose()
+    used.current = [...used.current, next.answer.code];
     setRound(next);
     setPicked(null);
-    upcoming.current = nextRound(recent.current);
-    preload(upcoming.current);
+    upcoming.current = nextRound(used.current);
+    if (upcoming.current) preload(upcoming.current);
   }, []);
 
   const choose = (c: Country) => {
     if (picked) return; // the verdict is showing — the next tap is შემდეგი
     setPicked(c);
-    if (c.code === round.answer.code) {
-      setStreak((s) => s + 1);
-    } else {
+
+    if (c.code !== round.answer.code) {
       setOver(true);
       onGameOver(streak);
+      return;
+    }
+
+    const reached = streak + 1;
+    setStreak(reached);
+
+    // Nothing prepared means that was the last country in the pool: the run is
+    // won, not merely continuing. Ending it here rather than on the next tap
+    // means the win lands the instant it is earned.
+    if (!upcoming.current) {
+      setWon(true);
+      setOver(true);
+      onGameOver(reached);
     }
   };
 
   const restart = () => {
-    const first = nextRound();
-    recent.current = [first.answer.code];
+    const first = nextRound()!;
+    used.current = [first.answer.code];
     setRound(first);
     setPicked(null);
     setStreak(0);
     setOver(false);
-    upcoming.current = nextRound(recent.current);
-    preload(upcoming.current);
+    setWon(false);
+    upcoming.current = nextRound(used.current);
+    if (upcoming.current) preload(upcoming.current);
   };
 
   return (
@@ -113,7 +138,7 @@ export function FlagGame({ onGameOver }: FlagGameProps) {
         sx={{
           width: '100%',
           maxWidth: 460,
-          aspectRatio: '3 / 2',
+          aspectRatio: '4 / 3',
           borderRadius: '16px',
           overflow: 'hidden',
           border: '1px solid',
@@ -127,7 +152,11 @@ export function FlagGame({ onGameOver }: FlagGameProps) {
           component="img"
           src={flagSrc(round.answer.code)}
           alt=""
-          sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          // `contain`, never `cover`. The assets are 4:3 and the frame now
+          // matches, but a flag is a specific object — cropping one to fill a
+          // box is showing the wrong flag, and it was quietly cutting the
+          // bottom off every one of them.
+          sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
         />
       </Box>
 
@@ -174,8 +203,11 @@ export function FlagGame({ onGameOver }: FlagGameProps) {
       <Box sx={{ width: '100%', maxWidth: 460, minHeight: 52 }}>
         {over ? (
           <Stack spacing={1} alignItems="center">
-            <Typography variant="caption" color="text.secondary">
-              {ka.flags.correctWas(round.answer.ka)}
+            <Typography
+              variant="caption"
+              sx={{ color: won ? 'primary.main' : 'text.secondary', fontWeight: won ? 700 : 400 }}
+            >
+              {won ? ka.flags.perfect(PERFECT) : ka.flags.correctWas(round.answer.ka)}
             </Typography>
             <Button fullWidth variant="contained" sx={{ height: 52 }} onClick={restart}>
               {ka.flags.again}

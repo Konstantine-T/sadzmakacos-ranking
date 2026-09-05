@@ -295,6 +295,7 @@ export const ka = {
     plays: (n: number) => `${n} თამაში`,
     over: "თამაში დასრულდა",
     correctWas: (name: string) => `სწორი პასუხი: ${name}`,
+    perfect: (n: number) => `ყველა ${n} დროშა გამოიცანი!`,
     close: "დახურვა",
   },
 

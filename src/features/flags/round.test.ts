@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { COUNTRIES } from './countries';
-import { nextRound, RECENT_MEMORY } from './round';
+import { nextRound, PERFECT } from './round';
 
 // ----------------------------------------------------------------- the data --
 
@@ -66,37 +66,63 @@ test('the eight hand edits are present', () => {
 
 test('a round offers four distinct options and includes the answer', () => {
   for (let i = 0; i < 300; i++) {
-    const { answer, options } = nextRound();
-    assert.equal(options.length, 4);
-    assert.equal(new Set(options.map((o) => o.code)).size, 4);
-    assert.ok(options.some((o) => o.code === answer.code), 'answer missing from options');
+    const round = nextRound();
+    assert.ok(round, 'a fresh pool must yield a round');
+    assert.equal(round.options.length, 4);
+    assert.equal(new Set(round.options.map((o) => o.code)).size, 4);
+    assert.ok(round.options.some((o) => o.code === round.answer.code), 'answer missing');
   }
 });
 
 test('distractors come from the answer’s own region', () => {
   for (let i = 0; i < 300; i++) {
-    const { answer, options } = nextRound();
-    for (const o of options) {
+    const round = nextRound()!;
+    for (const o of round.options) {
       assert.equal(
         o.region,
-        answer.region,
-        `${o.en} (${o.region}) offered against ${answer.en} (${answer.region})`,
+        round.answer.region,
+        `${o.en} (${o.region}) offered against ${round.answer.en} (${round.answer.region})`,
       );
     }
   }
 });
 
-test('a recently seen flag is not asked again', () => {
-  const recent = COUNTRIES.slice(0, RECENT_MEMORY).map((c) => c.code);
+test('a country already asked is never asked again', () => {
+  const used = COUNTRIES.slice(0, 50).map((c) => c.code);
   for (let i = 0; i < 300; i++) {
-    assert.ok(!recent.includes(nextRound(recent).answer.code));
+    assert.ok(!used.includes(nextRound(used)!.answer.code));
   }
 });
 
-test('an exhausted memory falls back rather than looping forever', () => {
-  // Every country marked as recent — the draw must still return something.
-  const all = COUNTRIES.map((c) => c.code);
-  const { answer, options } = nextRound(all);
-  assert.ok(answer.code);
-  assert.equal(options.length, 4);
+test('distractors may still reuse a spent country', () => {
+  // Only the answer is consumed. Late in a run, excluding shown countries from
+  // the options too would leave nothing to draw from.
+  const allButOne = COUNTRIES.slice(1).map((c) => c.code);
+  const round = nextRound(allButOne);
+  assert.ok(round);
+  assert.equal(round.answer.code, COUNTRIES[0].code);
+  assert.equal(round.options.length, 4);
+});
+
+test('an exhausted pool ends the run instead of repeating', () => {
+  const everything = COUNTRIES.map((c) => c.code);
+  assert.equal(nextRound(everything), null);
+});
+
+test('PERFECT is the size of the pool, so a flawless run is finite', () => {
+  assert.equal(PERFECT, COUNTRIES.length);
+
+  // Walk a whole perfect game: every answer distinct, ending in exactly PERFECT
+  // rounds and then null.
+  const used: string[] = [];
+  let rounds = 0;
+  for (;;) {
+    const round = nextRound(used);
+    if (!round) break;
+    assert.ok(!used.includes(round.answer.code));
+    used.push(round.answer.code);
+    rounds++;
+    assert.ok(rounds <= PERFECT, 'ran past the pool');
+  }
+  assert.equal(rounds, PERFECT);
 });
