@@ -13,7 +13,7 @@ interface FlagBoardProps {
 /**
  * The flag game's high-score board.
  *
- * Deliberately the same row grammar as the snake and trivia boards — repeating
+ * Deliberately the same row grammar as the trivia board — repeating
  * rank numerals on a tie, gold for #1, your own row tinted — so all three read
  * as siblings even though they rank different quantities and share no code.
  * The number here is a streak.

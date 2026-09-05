@@ -298,23 +298,6 @@ export const ka = {
     close: "დახურვა",
   },
 
-  snake: {
-    name: "Snake",
-    subtitle: "უბრალოდ სნეიქი",
-    start: "თამაშის დაწყება",
-    again: "თავიდან",
-    board: "საუკეთესო შედეგები",
-    empty: "ჯერ არავის უთამაშია",
-    score: "ქულა",
-    best: "რეკორდი",
-    plays: (n: number) => `${n} თამაში`,
-    over: "თამაში დასრულდა",
-    newRecord: "ახალი რეკორდი!",
-    hint: "მიმართულების შესაცვლელად გაუსვით ეკრანზე",
-    hintDesktop: "ისრები ან WASD",
-    close: "დახურვა",
-  },
-
   trivia: {
     title: "ტრივია",
     games: "თამაშები",

@@ -10,9 +10,7 @@ import { useRealtime } from '@/features/realtime/useRealtime';
 import { ScoreScopeTabs } from '@/features/trivia/ScoreScopeTabs';
 import { TriviaBoard } from '@/features/trivia/TriviaBoard';
 import { TriviaGameCard } from '@/features/trivia/TriviaGameCard';
-import { SnakeGameCard } from '@/features/snake/SnakeGameCard';
 import { FlagGameCard } from '@/features/flags/FlagGameCard';
-import { useSnakeBoard } from '@/features/snake/api';
 import { useFlagBoard } from '@/features/flags/api';
 import {
   useMyAnswers,
@@ -58,7 +56,6 @@ export function TriviaPage() {
   const answers = useMyAnswers(weekId, member?.id);
   const weekBoard = useTriviaWeekBoard(weekId);
   const allTime = useTriviaAllTimeBoard();
-  const snake = useSnakeBoard();
   const flags = useFlagBoard();
 
   const answeredCount = useMemo(() => {
@@ -102,18 +99,13 @@ export function TriviaPage() {
                 total={questions.data?.length ?? 0}
                 onOpen={() => navigate('/trivia/skills')}
               />
-              {/* Neither of the two below feeds ტრივიას რანკი. Every game owns
-                  its own board: a weekly ten-question test and an endless run
+              {/* The flag game does not feed ტრივიას რანკი. Every game owns its
+                  own board: a weekly ten-question test and an endless run
                   cannot be summed without whoever plays most winning. */}
               <FlagGameCard
                 topStreak={flags.rows[0]?.best_streak ?? 0}
                 myBest={flags.rows.find((r) => r.member_id === member?.id)?.best_streak}
                 onOpen={() => navigate('/trivia/flags')}
-              />
-              <SnakeGameCard
-                topScore={snake.rows[0]?.best_score ?? 0}
-                myBest={snake.rows.find((r) => r.member_id === member?.id)?.best_score}
-                onOpen={() => navigate('/trivia/snake')}
               />
             </Stack>
           )

@@ -8,7 +8,6 @@ import { pollKeys } from '@/features/polls/api';
 import { weekKeys } from '@/features/week/api';
 import { notificationKeys } from '@/features/notifications/api';
 import { triviaKeys } from '@/features/trivia/api';
-import { snakeKeys } from '@/features/snake/api';
 import { flagKeys } from '@/features/flags/api';
 import { chatKeys } from '@/features/chat/api';
 
@@ -21,7 +20,6 @@ type Signal =
   | 'polls'
   | 'weeks'
   | 'trivia'
-  | 'snake'
   | 'flags'
   | 'chat'
   | 'chat_reaction';
@@ -84,9 +82,6 @@ export function useRealtime(weekId: number | undefined) {
       if (signals.has('flags')) {
         queryClient.invalidateQueries({ queryKey: flagKeys.board });
       }
-      if (signals.has('snake')) {
-        queryClient.invalidateQueries({ queryKey: snakeKeys.board });
-      }
       if (signals.has('trivia')) {
         if (weekId !== undefined) {
           queryClient.invalidateQueries({ queryKey: triviaKeys.weekBoard(weekId) });
@@ -138,14 +133,9 @@ export function useRealtime(weekId: number | undefined) {
         { event: 'INSERT', schema: 'public', table: 'trivia_events' },
         () => schedule('trivia'),
       )
-      // snake_scores is subscribed to DIRECTLY, unlike votes and trivia answers.
+      // flag_scores is subscribed to DIRECTLY, unlike votes and trivia answers.
       // Every column in it is already on the leaderboard for everybody, so there
       // is no identity to protect and no event table to hide behind.
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'snake_scores' },
-        () => schedule('snake'),
-      )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'flag_scores' },

@@ -1,30 +1,28 @@
 -- ============================================================================
 -- გამოიცანი ქვეყანა დროშის მიხედვით — the flag game's scoreboard.
 --
--- SEPARATE RANK, ON PURPOSE. This does not touch ტრივიას რანკი, and neither
--- does სნეიკი. Summing scores across games only works if the games are the same
--- shape, and they are not: უნარების ტესტები is ten questions a week answered
--- once, this is an endless streak you can chase all evening. Adding them
--- together would mean whoever plays the most wins the trivia rank regardless of
--- what they know. Every game owns its board; that is the rule from here on.
+-- SEPARATE RANK, ON PURPOSE. This does not touch ტრივიას რანკი. Summing scores
+-- across games only works if the games are the same shape, and they are not:
+-- უნარების ტესტები is ten questions a week answered once, this is an endless
+-- streak you can chase all evening. Adding them together would mean whoever
+-- plays the most wins the trivia rank regardless of what they know. Every game
+-- owns its board; that is the rule from here on.
 --
 -- NO COUNTRY TABLE. The 195 countries and their Georgian names are bundled with
 -- the app (src/features/flags/countries.ts), not stored here. There is nothing
--- to hide: the score is client-reported anyway, exactly like snake's, so a
--- server-side answer key would protect nothing while costing a seed paste and a
--- deploy-time coupling. Contrast უნარების ტესტები, where correct_index really
--- is withheld — there the score is graded server-side and the secrecy buys
--- something real.
+-- to hide: the score is client-reported anyway, so a server-side answer key
+-- would protect nothing while costing a seed paste and a deploy-time coupling.
+-- Contrast უნარების ტესტები, where correct_index really is withheld — there the
+-- score is graded server-side and the secrecy buys something real.
 --
 -- ONE ROW PER MEMBER, best streak only. Not a log of every game; twenty friends
 -- chasing a streak would fill a table nobody reads, and the only question the
 -- board asks is "what is your best". `plays` earns its place as an honest
 -- tiebreak — the same streak reached in fewer attempts sits higher.
 --
--- This is deliberately a near-copy of snake_scores rather than a shared
--- `game_scores` table. Generalising would mean migrating a table that is
--- already live and working, to save thirty lines. When a fourth game arrives,
--- that is the moment to fold all three into one — not before.
+-- If a third scored game ever arrives, this and any sibling should be folded
+-- into one `game_scores (game, member_id, …)` table rather than copied again.
+-- Two is not yet worth the indirection.
 -- ============================================================================
 
 begin;
@@ -80,9 +78,9 @@ end $$;
 revoke all    on function public.submit_flag_score(int) from public, anon;
 grant execute on function public.submit_flag_score(int) to authenticated;
 
--- Published whole, like snake_scores: every column is already on the
--- leaderboard for everybody, so the WAL carries no secret and no identity-free
--- event table is needed to stand in front of it.
+-- Published whole: every column is already on the leaderboard for everybody, so
+-- the WAL carries no secret and no identity-free event table is needed to stand
+-- in front of it.
 do $$
 begin
   if not exists (

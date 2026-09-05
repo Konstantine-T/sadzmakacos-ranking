@@ -319,17 +319,6 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
-      snake_scores: {
-        Row: {
-          member_id: string;
-          best_score: number;
-          plays: number;
-          updated_at: string;
-        };
-        Insert: never;
-        Update: never;
-        Relationships: [];
-      };
       trivia_events: {
         Row: { id: number; week_id: number; created_at: string };
         Insert: never;
@@ -529,10 +518,6 @@ export interface Database {
         Args: { p_streak: number };
         Returns: number;
       };
-      submit_snake_score: {
-        Args: { p_score: number };
-        Returns: number;
-      };
       answer_trivia: {
         Args: { p_question_id: string; p_choice_index: number };
         Returns: { correct_index: number; is_correct: boolean }[];
@@ -584,7 +569,6 @@ export type ReactionCount = Views<'post_reaction_counts'>;
 export type TriviaQuestion = Tables<'trivia_questions'>;
 export type TriviaAnswer = Tables<'trivia_answers'>;
 export type TriviaResult = Tables<'trivia_results'>;
-export type SnakeScore = Tables<'snake_scores'>;
 export type FlagScore = Tables<'flag_scores'>;
 export type ChatMessage = Tables<'messages'>;
 export type MessageReactionCount = Views<'message_reaction_counts'>;
