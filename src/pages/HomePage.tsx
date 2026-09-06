@@ -86,9 +86,12 @@ export function HomePage() {
 
   useRealtime(weekId);
 
-  const { rows, isPending } = useRankedStandings(weekId);
+  const turnoutData = useTurnout(weekId);
+  /* Server-sourced, not `ends_at` against the phone's clock — a device an
+     hour fast would otherwise disagree with what the view is returning. */
+  const blackout = turnoutData.data?.blackout ?? false;
+  const { rows, isPending } = useRankedStandings(weekId, blackout);
   const myVotes = useMyVotes(weekId);
-  const turnout = useTurnout(weekId);
   const announcements = useAnnouncements();
 
   const castVote = useCastVote(weekId);
@@ -135,6 +138,16 @@ export function HomePage() {
     <PageTransition>
       <Stack sx={{ pt: { xs: 1.75, lg: 0 } }} spacing={wide ? 2.25 : 0}>
         <Stack spacing={2} sx={{ px: { xs: 2, lg: 0 } }}>
+          {blackout && !wide && (
+            <Alert
+              severity="info"
+              icon={false}
+              sx={{ borderRadius: '12px', fontSize: 13, lineHeight: 1.5 }}
+            >
+              {ka.standings.blackout}
+            </Alert>
+          )}
+
           {announcements.data?.map((announcement) => (
             <Alert key={announcement.id} severity="info" sx={{ borderRadius: '12px' }}>
               {announcement.body}
@@ -149,7 +162,7 @@ export function HomePage() {
               key={poll.id}
               poll={poll}
               members={members}
-              totalMembers={turnout.data?.total_members ?? members.size}
+              totalMembers={turnoutData.data?.total_members ?? members.size}
               onAnswer={(optionIds) =>
                 answerPoll.mutate({ pollId: poll.id, optionIds }, { onError: toastError })
               }
@@ -167,8 +180,8 @@ export function HomePage() {
           ) : (
             <WeekCard
               week={week}
-              voters={turnout.data?.voters ?? 0}
-              total={turnout.data?.total_members ?? 0}
+              voters={turnoutData.data?.voters ?? 0}
+              total={turnoutData.data?.total_members ?? 0}
               onExpire={() => {
                 // The cron job closes the week server-side; refetch so the new
                 // one appears without a manual reload.

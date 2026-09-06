@@ -31,6 +31,15 @@ function elapsedPct(week: Week, now: number): number {
  * instead of a scroll before it.
  */
 export function WeekStrip({ week, rows, onExpire }: WeekStripProps) {
+  /**
+   * The week's last six hours. Read off the rows rather than passed in, since
+   * they already carry it from useRankedStandings.
+   *
+   * The podium has to go, not just be dimmed: during the blackout the rows are
+   * deliberately scrambled and all-zero, so a top three would be three
+   * arbitrary people presented as leaders — worse than showing nothing.
+   */
+  const hidden = rows[0]?.blackout === true;
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -100,6 +109,21 @@ export function WeekStrip({ week, rows, onExpire }: WeekStripProps) {
         {week.is_paused ? (
           <Alert severity="warning" variant="outlined" sx={{ borderRadius: '12px', flex: 'none' }}>
             {ka.week.paused}
+          </Alert>
+        ) : hidden ? (
+          <Alert
+            severity="info"
+            icon={false}
+            variant="outlined"
+            sx={{
+              borderRadius: '12px',
+              flex: 'none',
+              maxWidth: 360,
+              fontSize: 12.5,
+              lineHeight: 1.45,
+            }}
+          >
+            {ka.standings.blackout}
           </Alert>
         ) : (
           <Stack direction="row" spacing={1.25} sx={{ flex: 'none' }}>

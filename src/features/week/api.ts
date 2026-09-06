@@ -75,7 +75,7 @@ export function useTurnout(weekId: number | undefined) {
         .eq('week_id', weekId!)
         .maybeSingle();
       if (error) throw error;
-      return data ?? { week_id: weekId!, voters: 0, total_members: 0 };
+      return data ?? { week_id: weekId!, voters: 0, total_members: 0, blackout: false };
     },
   });
 }

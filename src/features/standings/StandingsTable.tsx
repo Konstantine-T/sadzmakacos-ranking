@@ -153,7 +153,8 @@ export function StandingsTable({
           </Box>
 
           {rows.map((row) => {
-            const heat = rowHeat(row, max, isDark);
+            const hidden = row.blackout === true;
+            const heat = rowHeat(row, hidden ? 0 : max, isDark);
             const isSelf = myId === row.member_id;
             const expanded = openId === row.member_id;
             const detail = detailFor?.(row);
@@ -191,7 +192,9 @@ export function StandingsTable({
                         role: 'button',
                         tabIndex: 0,
                         'aria-expanded': expanded,
-                        'aria-label': `${row.rank}. ${row.nickname}, ${ka.standings.net} ${
+                        'aria-label': hidden
+                          ? `${row.nickname}, ${ka.standings.hiddenLabel}`
+                          : `${row.rank}. ${row.nickname}, ${ka.standings.net} ${
                           row.net > 0 ? `+${row.net}` : row.net
                         }`,
                         onClick: () =>
@@ -223,7 +226,7 @@ export function StandingsTable({
                     variant="numeral"
                     sx={{ fontSize: 26, textAlign: 'right', color: heat.rankColor }}
                   >
-                    {row.rank}
+                    {hidden ? '—' : row.rank}
                   </Typography>
 
                   <Avatar {...ava} sx={{ ...ava.sx, width: 38, height: 38 }} />
@@ -265,41 +268,51 @@ export function StandingsTable({
                   </Stack>
 
                   <Box sx={{ justifySelf: 'start' }}>
-                    <RankDelta movement={row.movement} muted={allTime} />
+                    {!hidden && <RankDelta movement={row.movement} muted={allTime} />}
                   </Box>
 
                   <HeatBar
-                    up={row.up}
-                    down={row.down}
-                    max={max}
+                    up={hidden ? 0 : row.up}
+                    down={hidden ? 0 : row.down}
+                    max={hidden ? 0 : max}
                     height={6}
                     upColor={heat.upColor}
                     trackColor={isDark ? '#221B19' : theme.palette.surface2}
-                    label={`${row.nickname}: ${row.up} ${ka.standings.up}, ${row.down} ${ka.standings.down}`}
+                    label={
+                      hidden
+                        ? `${row.nickname}: ${ka.standings.hiddenLabel}`
+                        : `${row.nickname}: ${row.up} ${ka.standings.up}, ${row.down} ${ka.standings.down}`
+                    }
                   />
 
                   <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.1}>
-                    <Typography
-                      sx={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        fontVariantNumeric: 'tabular-nums',
-                        color: 'signal.up',
-                      }}
-                    >
-                      {row.up}
-                    </Typography>
-                    <Typography sx={{ fontSize: 11, color: 'textMute' }}>/</Typography>
-                    <Typography
-                      sx={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        fontVariantNumeric: 'tabular-nums',
-                        color: 'signal.down',
-                      }}
-                    >
-                      {row.down}
-                    </Typography>
+                    {hidden ? (
+                      <Typography sx={{ fontSize: 13, color: 'text.disabled' }}>—</Typography>
+                    ) : (
+                      <>
+                        <Typography
+                          sx={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            fontVariantNumeric: 'tabular-nums',
+                            color: 'signal.up',
+                          }}
+                        >
+                          {row.up}
+                        </Typography>
+                        <Typography sx={{ fontSize: 11, color: 'textMute' }}>/</Typography>
+                        <Typography
+                          sx={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            fontVariantNumeric: 'tabular-nums',
+                            color: 'signal.down',
+                          }}
+                        >
+                          {row.down}
+                        </Typography>
+                      </>
+                    )}
                   </Stack>
 
                   <Typography
@@ -307,10 +320,14 @@ export function StandingsTable({
                     sx={{
                       fontSize: 15,
                       textAlign: 'right',
-                      color: row.net >= 0 ? 'signal.up' : 'signal.down',
+                      color: hidden
+                        ? 'text.disabled'
+                        : row.net >= 0
+                          ? 'signal.up'
+                          : 'signal.down',
                     }}
                   >
-                    {row.net > 0 ? `+${row.net}` : row.net}
+                    {hidden ? '—' : row.net > 0 ? `+${row.net}` : row.net}
                   </Typography>
 
                   <Box sx={{ justifySelf: 'center' }}>
@@ -352,9 +369,11 @@ export function StandingsTable({
                     }}
                   >
                     <Typography variant="caption" color="text.secondary">
-                      {row.total_votes === 0
-                        ? ka.standings.noVotes
-                        : TONE_LABEL[toneOf(row.up, row.down)]}
+                      {hidden
+                        ? ka.standings.hiddenLabel
+                        : row.total_votes === 0
+                          ? ka.standings.noVotes
+                          : TONE_LABEL[toneOf(row.up, row.down)]}
                     </Typography>
 
                     {detail}

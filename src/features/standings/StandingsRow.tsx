@@ -22,6 +22,14 @@ export interface StandingsRowData {
   total_votes: number;
   rank: number;
   movement: number | null;
+  /**
+   * The week's last six hours: position and totals are withheld.
+   *
+   * Set per row rather than passed as a prop so both boards and every cell get
+   * it without plumbing. The values are already zeroed by `live_standings` —
+   * this only tells the row to render "—" rather than a confident 0.
+   */
+  blackout?: boolean;
 }
 
 interface StandingsRowProps {
@@ -86,11 +94,14 @@ export function StandingsRow({
   onReact,
 }: StandingsRowProps) {
   const theme = useTheme();
-  const heat = rowHeat(row, max, theme.palette.mode === 'dark');
+  const hidden = row.blackout === true;
+  // Zeroed counts would otherwise paint every row identically warm; a
+  // blacked-out row gets no temperature at all.
+  const heat = rowHeat(row, hidden ? 0 : max, theme.palette.mode === 'dark');
   const ava = avatarProps(row.member_id, row.nickname, avatarUrl(row.avatar_url));
 
   const reactions = showReactions(reactionCounts, Boolean(onReact));
-  const hasDetail = Boolean(reactions || detail || row.total_votes > 0);
+  const hasDetail = !hidden && Boolean(reactions || detail || row.total_votes > 0);
 
   return (
     <Box
@@ -128,7 +139,9 @@ export function StandingsRow({
               // plus a label replaces the element's contents for a screen
               // reader, so a bare "expand" would hide the whole scoreboard.
               // `aria-expanded` already conveys the toggle.
-              'aria-label': `${row.rank}. ${row.nickname}, ${ka.standings.net} ${
+              'aria-label': hidden
+                ? `${row.nickname}, ${ka.standings.hiddenLabel}`
+                : `${row.rank}. ${row.nickname}, ${ka.standings.net} ${
                 row.net > 0 ? `+${row.net}` : row.net
               }`,
               onClick: onToggle,
@@ -160,7 +173,7 @@ export function StandingsRow({
           variant="numeral"
           sx={{ minWidth: 30, fontSize: 26, textAlign: 'right', color: heat.rankColor }}
         >
-          {row.rank}
+          {hidden ? '—' : row.rank}
         </Typography>
 
         <Avatar {...ava} sx={{ ...ava.sx, width: 40, height: 40, flex: 'none' }} />
@@ -204,20 +217,26 @@ export function StandingsRow({
           </Stack>
 
           <Stack direction="row" alignItems="center" spacing={1}>
-            <RankDelta movement={row.movement} muted={allTime} />
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {ka.standings.net}{' '}
-              <Box
-                component="b"
-                sx={{
-                  fontWeight: 800,
-                  fontVariantNumeric: 'tabular-nums',
-                  color: row.net >= 0 ? 'signal.up' : 'signal.down',
-                }}
-              >
-                {row.net > 0 ? `+${row.net}` : row.net}
-              </Box>
-            </Typography>
+            {!hidden && <RankDelta movement={row.movement} muted={allTime} />}
+            {hidden ? (
+              <Typography variant="caption" sx={{ color: 'text.disabled' }} noWrap>
+                {ka.standings.hiddenLabel}
+              </Typography>
+            ) : (
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {ka.standings.net}{' '}
+                <Box
+                  component="b"
+                  sx={{
+                    fontWeight: 800,
+                    fontVariantNumeric: 'tabular-nums',
+                    color: row.net >= 0 ? 'signal.up' : 'signal.down',
+                  }}
+                >
+                  {row.net > 0 ? `+${row.net}` : row.net}
+                </Box>
+              </Typography>
+            )}
           </Stack>
         </Stack>
 
@@ -243,12 +262,16 @@ export function StandingsRow({
       </Box>
 
       <HeatBar
-        up={row.up}
-        down={row.down}
-        max={max}
+        up={hidden ? 0 : row.up}
+        down={hidden ? 0 : row.down}
+        max={hidden ? 0 : max}
         upColor={heat.upColor}
         trackColor={theme.palette.mode === 'dark' ? '#221B19' : theme.palette.surface2}
-        label={`${row.nickname}: ${row.up} ${ka.standings.up}, ${row.down} ${ka.standings.down}`}
+        label={
+          hidden
+            ? `${row.nickname}: ${ka.standings.hiddenLabel}`
+            : `${row.nickname}: ${row.up} ${ka.standings.up}, ${row.down} ${ka.standings.down}`
+        }
       />
 
       <Collapse in={expanded} unmountOnExit>
@@ -264,9 +287,9 @@ export function StandingsRow({
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1.75}>
-            {row.total_votes === 0 ? (
+            {hidden || row.total_votes === 0 ? (
               <Typography variant="caption" color="text.secondary">
-                {ka.standings.noVotes}
+                {hidden ? ka.standings.hiddenLabel : ka.standings.noVotes}
               </Typography>
             ) : (
               <>

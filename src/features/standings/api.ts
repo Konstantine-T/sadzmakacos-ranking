@@ -118,18 +118,51 @@ export interface RankedStanding extends Ranked<LiveStanding> {
  * The board as rendered: ranked client-side with exactly the rules
  * close_current_week() uses, so nothing jumps when the week closes.
  */
-export function useRankedStandings(weekId: number | undefined) {
+/**
+ * A stable shuffle key.
+ *
+ * During the blackout the rows must not sit in any order that means something —
+ * alphabetical would put the same person on top every time and read like a
+ * standing, and `Math.random()` would reshuffle on every refetch and every
+ * incoming vote. Hashing the member id gives an order that looks arbitrary and
+ * never moves.
+ */
+function scrambleKey(memberId: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < memberId.length; i++) {
+    h ^= memberId.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/**
+ * @param blackout the week's last six hours — see 20260906000100_endgame_blackout.
+ *   The counts arrive already zeroed from `live_standings`; this only stops the
+ *   client presenting that as a real standing.
+ */
+export function useRankedStandings(weekId: number | undefined, blackout = false) {
   const standings = useLiveStandings(weekId);
   const prevRanks = usePrevClosedRanks();
 
   const rows = useMemo<RankedStanding[]>(() => {
     if (!standings.data) return [];
+
+    if (blackout) {
+      // No rank, and no movement either: `movement` is measured against last
+      // week's frozen position, so leaving it in would leak a placing the
+      // blackout is meant to withhold.
+      return [...standings.data]
+        .sort((a, b) => scrambleKey(a.member_id) - scrambleKey(b.member_id))
+        .map((row) => ({ ...row, rank: 0, movement: null, blackout: true }));
+    }
+
     const prev = prevRanks.data ?? new Map<string, number>();
     return rankMembers(standings.data).map((row) => {
       const before = prev.get(row.member_id);
       return { ...row, movement: before === undefined ? null : before - row.rank };
     });
-  }, [standings.data, prevRanks.data]);
+  }, [standings.data, prevRanks.data, blackout]);
 
   return {
     rows,

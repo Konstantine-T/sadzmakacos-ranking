@@ -376,7 +376,7 @@ export interface Database {
         Relationships: [];
       };
       week_turnout: {
-        Row: { week_id: number; voters: number; total_members: number };
+        Row: { week_id: number; voters: number; total_members: number; blackout: boolean };
         Relationships: [];
       };
       post_scores: {
