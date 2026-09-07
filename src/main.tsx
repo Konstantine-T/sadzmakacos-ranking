@@ -6,7 +6,10 @@ import '@fontsource-variable/noto-sans-georgian/wght.css';
 import '@fontsource-variable/noto-serif-georgian/wght.css';
 
 import App from './App';
+import { registerServiceWorker } from './lib/pwa';
 import './index.css';
+
+registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

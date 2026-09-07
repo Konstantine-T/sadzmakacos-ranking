@@ -7,6 +7,16 @@
     <meta name="description" content="საძმაკაცოს რანკი — კვირის რანკინგი" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- Installable: an icon on the home screen that opens without browser
+         chrome. iOS needs the apple-* tags specifically — it ignores the
+         manifest for the Home Screen icon and the standalone launch. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="რანკი" />
+
     <!-- The only place in the app that needs an absolute URL: link previews
          cannot resolve relative paths, so these carry the domain literally. If
          the domain ever changes, this block and Supabase's URL Configuration

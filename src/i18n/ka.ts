@@ -270,6 +270,17 @@ export const ka = {
     postVoteMany: (n: number) => `შენს პოსტს ${n} ხმა`,
   },
 
+  install: {
+    title: "დააყენე აპლიკაციასავით",
+    why: "გაიხსნება ცალკე აპლიკაციად და შეტყობინებებსაც მიიღებ.",
+    button: "დაყენება",
+    installed: "აპლიკაცია დაყენებულია",
+    iosTitle: "iPhone-ზე:",
+    iosStep1: "გახსენი Safari-ში (არა Chrome-ში)",
+    iosStep2: "დააჭირე გაზიარების ღილაკს",
+    iosStep3: "აირჩიე „Add to Home Screen“",
+  },
+
   chat: {
     title: "ჩატი",
     placeholder: "დაწერე რამე…",

@@ -25,6 +25,7 @@ import { BadgeShelf } from '@/features/profile/BadgeShelf';
 import { RankHistoryChart } from '@/features/profile/RankHistoryChart';
 import { WeekBreakdownTable } from '@/features/profile/WeekBreakdownTable';
 import { TriviaProfileBlock } from '@/features/trivia/TriviaProfileBlock';
+import { InstallCard } from '@/features/profile/InstallCard';
 import { useMemberBadges, useMemberResults, useUpdateMyProfile } from '@/features/members/api';
 import { ka } from '@/i18n/ka';
 
@@ -127,6 +128,8 @@ export function MePage() {
         {!wide && shelf}
 
         <TriviaProfileBlock memberId={member?.id} />
+
+        <InstallCard />
 
         <Box
           sx={{
