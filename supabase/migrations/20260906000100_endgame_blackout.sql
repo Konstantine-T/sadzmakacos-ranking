@@ -29,6 +29,19 @@
 -- and refetches), so during the blackout it is written null. The ping still
 -- fires; it just stops naming anybody.
 --
+-- RANK NOTICES STOP TOO. "ახლა #4 ხარ" states a position outright, so leaving
+-- them on would have handed back through the bell exactly what the board stops
+-- showing. Worse: with the view zeroed, every member ties on net 0, so
+-- live_ranks() would have called everyone #1 and emit_rank_notices() would have
+-- told all twenty of them so, at once, on the next vote. live_ranks() returns
+-- no rows during the blackout instead, which makes the whole emitter a no-op
+-- without touching its 120 lines — it seeds nothing, finds nothing moved, and
+-- writes nothing.
+--
+-- A rank notice that was already unread when the blackout began is left alone.
+-- It names a position that was public at the moment it was written, so it
+-- reveals nothing the blackout is protecting; it is merely stale.
+--
 -- Closed weeks are untouched. `week_standings` reads `weekly_results`, which is
 -- written by close_current_week() from `votes` directly and never sees this
 -- view — so the moment the week closes, everything appears at once, correct.
@@ -82,6 +95,22 @@ select
   (select count(*) from public.members m where m.is_active)::int as total_members,
   (w.status = 'open' and now() >= public.blackout_starts_at(w.ends_at)) as blackout
 from public.weeks w;
+
+-- -------------------------------------------------------- rank notices --
+-- Six lines instead of redefining emit_rank_notices(), which is 120 and would
+-- have to be copied wholesale to add one guard — the copy-and-drift trap this
+-- repo keeps warning about. live_ranks() is used by nothing else.
+create or replace function public.live_ranks(p_week int)
+returns table (member_id uuid, rank int)
+language sql stable security definer set search_path = public as $$
+  select ls.member_id, (rank() over (order by ls.net desc))::int
+    from public.live_standings ls
+    join public.weeks w on w.id = ls.week_id
+   where ls.week_id = p_week
+     and now() < public.blackout_starts_at(w.ends_at)
+$$;
+
+revoke execute on function public.live_ranks(int) from public, anon, authenticated;
 
 -- ------------------------------------------------------------- realtime --
 create or replace function public.emit_vote_event() returns trigger

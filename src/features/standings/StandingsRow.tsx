@@ -101,7 +101,15 @@ export function StandingsRow({
   const ava = avatarProps(row.member_id, row.nickname, avatarUrl(row.avatar_url));
 
   const reactions = showReactions(reactionCounts, Boolean(onReact));
-  const hasDetail = !hidden && Boolean(reactions || detail || row.total_votes > 0);
+  /**
+   * Reactions keep a row openable during the blackout.
+   *
+   * Only the VOTE breakdown is withheld — reacting to each other is a separate
+   * thing entirely, on its own table, and losing it for six hours was collateral
+   * damage from gating the whole expander. What is suppressed inside is the
+   * up/down/tone line; the reaction bar renders as it always does.
+   */
+  const hasDetail = Boolean(reactions || detail || (!hidden && row.total_votes > 0));
 
   return (
     <Box
