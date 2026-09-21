@@ -26,6 +26,7 @@ import { RankHistoryChart } from '@/features/profile/RankHistoryChart';
 import { WeekBreakdownTable } from '@/features/profile/WeekBreakdownTable';
 import { TriviaProfileBlock } from '@/features/trivia/TriviaProfileBlock';
 import { InstallCard } from '@/features/profile/InstallCard';
+import { PushCard } from '@/features/notifications/PushCard';
 import { useMemberBadges, useMemberResults, useUpdateMyProfile } from '@/features/members/api';
 import { ka } from '@/i18n/ka';
 
@@ -130,6 +131,8 @@ export function MePage() {
         <TriviaProfileBlock memberId={member?.id} />
 
         <InstallCard />
+
+        <PushCard />
 
         <Box
           sx={{

@@ -514,6 +514,19 @@ export interface Database {
         Args: { p_message_id: number };
         Returns: undefined;
       };
+      save_push_subscription: {
+        Args: {
+          p_endpoint: string;
+          p_p256dh: string;
+          p_auth: string;
+          p_user_agent?: string | null;
+        };
+        Returns: undefined;
+      };
+      delete_push_subscription: {
+        Args: { p_endpoint: string };
+        Returns: undefined;
+      };
       submit_flag_score: {
         Args: { p_streak: number };
         Returns: number;
