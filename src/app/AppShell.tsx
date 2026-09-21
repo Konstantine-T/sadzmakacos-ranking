@@ -285,6 +285,15 @@ export function AppShell() {
           color="transparent"
           elevation={0}
           sx={{
+            /*
+              Installed on an iPhone, the status bar overlays the page rather
+              than sitting above it (apple-mobile-web-app-status-bar-style is
+              black-translucent, so the app's own charcoal shows behind the
+              clock). The bar therefore extends up under it and pushes its
+              content down by the inset — 47–59px on a notched phone, 0 in a
+              browser tab and on Android, where the browser already handles it.
+            */
+            pt: "env(safe-area-inset-top)",
             backdropFilter: "blur(16px)",
             backgroundColor: (t) =>
               t.palette.mode === "dark"
@@ -395,7 +404,10 @@ export function AppShell() {
             left: 0,
             right: 0,
             zIndex: (t) => t.zIndex.appBar,
-            pb: "env(safe-area-inset-bottom)",
+            // The home-indicator strip (34px, installed) OR the row's own 8px
+            // of breathing room — whichever is larger, never both. Stacking
+            // them made the bar ~8px taller than a native tab bar.
+            pb: "max(env(safe-area-inset-bottom), 8px)",
             backgroundColor: (t) =>
               t.palette.mode === "dark"
                 ? "rgba(20,16,15,0.93)"
@@ -405,7 +417,7 @@ export function AppShell() {
           }}
         >
           <Container maxWidth="sm" disableGutters>
-            <Box sx={{ display: "flex", p: 1 }}>
+            <Box sx={{ display: "flex", pt: 1, px: 1, pb: 0 }}>
               {NAV.map((item, index) => {
                 const active = index === activeIndex;
                 return (
