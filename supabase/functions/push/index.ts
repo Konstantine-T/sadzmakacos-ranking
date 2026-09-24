@@ -29,11 +29,29 @@ interface OutboxRow {
   url: string;
 }
 
-const VAPID_PUBLIC = Deno.env.get('VAPID_PUBLIC_KEY')!;
-const VAPID_PRIVATE = Deno.env.get('VAPID_PRIVATE_KEY')!;
-const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'https://www.rankbros.ge';
+// `||` rather than `??`: a secret saved with an empty value is "set" to the
+// runtime and must still fall through, or the function dies on boot with a
+// web-push error that names the symptom and not the cause.
+const VAPID_PUBLIC = Deno.env.get('VAPID_PUBLIC_KEY') || '';
+const VAPID_PRIVATE = Deno.env.get('VAPID_PRIVATE_KEY') || '';
+const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') || 'https://www.rankbros.ge';
 
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+/**
+ * Configured lazily, inside the request, rather than at module load.
+ *
+ * At module load a bad secret crashes the isolate before any request handler
+ * runs, and the only trace is web-push's own stack — "No key set" — which says
+ * nothing about WHICH secret, or whether the runtime can see any of them at
+ * all. Checked here, a missing secret becomes a 500 whose body names it, and
+ * lists every VAPID_* variable the runtime actually has, so "I saved it" and
+ * "the function received it" can be told apart.
+ */
+function missingSecrets(): string[] {
+  const missing: string[] = [];
+  if (!VAPID_PUBLIC) missing.push('VAPID_PUBLIC_KEY');
+  if (!VAPID_PRIVATE) missing.push('VAPID_PRIVATE_KEY');
+  return missing;
+}
 
 // Service role: this reads other members' subscriptions, which RLS rightly
 // forbids to everyone else.
@@ -43,6 +61,16 @@ const db = createClient(
 );
 
 Deno.serve(async (req) => {
+  const missing = missingSecrets();
+  if (missing.length > 0) {
+    const seen = Object.keys(Deno.env.toObject()).filter((k) => k.startsWith('VAPID'));
+    const msg = `missing secrets: ${missing.join(', ')}. VAPID_* visible to this function: ` +
+      (seen.length ? seen.join(', ') : 'NONE');
+    console.error(msg);
+    return new Response(msg, { status: 500 });
+  }
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+
   let row: OutboxRow;
   try {
     const payload = await req.json();

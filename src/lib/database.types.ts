@@ -319,6 +319,18 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      truefalse_scores: {
+        Row: {
+          member_id: string;
+          category: string;
+          best_streak: number;
+          plays: number;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       trivia_events: {
         Row: { id: number; week_id: number; created_at: string };
         Insert: never;
@@ -531,6 +543,10 @@ export interface Database {
         Args: { p_streak: number };
         Returns: number;
       };
+      submit_truefalse_score: {
+        Args: { p_category: string; p_streak: number };
+        Returns: number;
+      };
       answer_trivia: {
         Args: { p_question_id: string; p_choice_index: number };
         Returns: { correct_index: number; is_correct: boolean }[];
@@ -583,6 +599,7 @@ export type TriviaQuestion = Tables<'trivia_questions'>;
 export type TriviaAnswer = Tables<'trivia_answers'>;
 export type TriviaResult = Tables<'trivia_results'>;
 export type FlagScore = Tables<'flag_scores'>;
+export type TrueFalseScore = Tables<'truefalse_scores'>;
 export type ChatMessage = Tables<'messages'>;
 export type MessageReactionCount = Views<'message_reaction_counts'>;
 export type TriviaEvent = Tables<'trivia_events'>;

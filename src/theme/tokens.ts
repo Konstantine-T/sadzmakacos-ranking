@@ -69,8 +69,8 @@ export const signal = {
  * დადასტურება button two rows below, and a wrong answer that matches the
  * primary button reads as "tap me", not "you missed".
  *
- * Nothing outside src/features/trivia/ and src/pages/TriviaTestPage.tsx may use
- * these.
+ * Nothing outside the quiz games — src/features/trivia/, src/features/flags/,
+ * src/features/truefalse/ and src/pages/TriviaTestPage.tsx — may use these.
  */
 export const quiz = {
   correct: '#4FB477',

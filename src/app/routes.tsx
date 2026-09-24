@@ -11,6 +11,8 @@ import { MePage } from '@/pages/MePage';
 import { TriviaPage } from '@/pages/TriviaPage';
 import { TriviaTestPage } from '@/pages/TriviaTestPage';
 import { FlagsPage } from '@/pages/FlagsPage';
+import { TrueFalsePage } from '@/pages/TrueFalsePage';
+import { TrueFalseBoardPage } from '@/pages/TrueFalseBoardPage';
 import { ChatPage } from '@/pages/ChatPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { PendingPage } from '@/pages/PendingPage';
@@ -48,6 +50,8 @@ export function AppRoutes() {
         <Route path="trivia" element={<TriviaPage />} />
         <Route path="trivia/skills" element={<TriviaTestPage />} />
         <Route path="trivia/flags" element={<FlagsPage />} />
+        <Route path="trivia/truefalse" element={<TrueFalsePage />} />
+        <Route path="trivia/truefalse/board/:category" element={<TrueFalseBoardPage />} />
         <Route path="chat" element={<ChatPage />} />
         {/* All-time is a scope on the board now, not a page. Old links still land. */}
         <Route path="all-time" element={<Navigate to="/" replace />} />
