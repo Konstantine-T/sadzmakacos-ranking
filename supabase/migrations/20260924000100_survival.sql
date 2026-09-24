@@ -1,11 +1,18 @@
 -- ============================================================================
--- მართალია თუ ტყუილი — the true/false survival game's scoreboards.
+-- გადარჩენა — multiple-choice trivia survival, and its scoreboards.
 --
 -- The group wanted a quiz they could chase all evening that is not about
--- flags. Questions come from The Trivia API (English, multiple choice); the
--- client turns each one into a single proposed answer and asks "right or
--- wrong?". One miss ends the run. Design:
--- docs/superpowers/specs/2026-09-24-truefalse-survival-design.md
+-- flags. Questions come from The Trivia API (English, four options each); one
+-- miss ends the run, and difficulty climbs with the streak. Design:
+-- docs/superpowers/specs/2026-09-24-survival-design.md
+--
+-- IT WAS BRIEFLY A TRUE/FALSE GAME. The first cut showed each question with a
+-- single proposed answer and asked "right or wrong?", under the name
+-- მართალია თუ ტყუილი and the table `truefalse_scores`. The API has no
+-- true/false questions — that framing was invented on top of multiple choice,
+-- and it read that way. It was replaced before it shipped. The two drops below
+-- clean up any database the earlier draft was pasted into; on any other they
+-- do nothing.
 --
 -- ELEVEN BOARDS, ONE TABLE. A run is played either across all ten of the API's
 -- categories ('all') or inside one of them, and each is ranked separately: a
@@ -32,7 +39,12 @@
 
 begin;
 
-create table if not exists public.truefalse_scores (
+-- The true/false draft (see above). Scores earned there answered a different
+-- question and are not carried over.
+drop function if exists public.submit_truefalse_score(text, int);
+drop table if exists public.truefalse_scores;
+
+create table if not exists public.survival_scores (
   member_id   uuid not null references public.members(id) on delete cascade,
   category    text not null check (category in (
                 'all',
@@ -45,21 +57,21 @@ create table if not exists public.truefalse_scores (
   updated_at  timestamptz not null default now(),
   primary key (member_id, category)
 );
-create index if not exists truefalse_scores_board
-  on public.truefalse_scores (category, best_streak desc);
+create index if not exists survival_scores_board
+  on public.survival_scores (category, best_streak desc);
 
-alter table public.truefalse_scores enable row level security;
+alter table public.survival_scores enable row level security;
 
-drop policy if exists truefalse_scores_select on public.truefalse_scores;
+drop policy if exists survival_scores_select on public.survival_scores;
 
 -- Everyone sees everyone. That is what a leaderboard is.
-create policy truefalse_scores_select on public.truefalse_scores
+create policy survival_scores_select on public.survival_scores
   for select to authenticated using (true);
 
 -- No insert/update/delete policy: the RPC is the only way in, so nobody can
 -- reach in and set someone else's streak.
-revoke all on public.truefalse_scores from anon, authenticated;
-grant select on public.truefalse_scores to authenticated;
+revoke all on public.survival_scores from anon, authenticated;
+grant select on public.survival_scores to authenticated;
 
 -- Record a finished run. Returns the member's best streak in that category
 -- afterwards.
@@ -68,7 +80,7 @@ grant select on public.truefalse_scores to authenticated;
 -- still counted as a play — which is what lets the board tiebreak on
 -- persistence. An unknown category fails the table's check constraint; it is
 -- checked here first so the client gets a named error instead.
-create or replace function public.submit_truefalse_score(p_category text, p_streak int)
+create or replace function public.submit_survival_score(p_category text, p_streak int)
 returns int
 language plpgsql security definer set search_path = public as $$
 declare
@@ -87,19 +99,19 @@ begin
     raise exception 'bad_score' using errcode = '22023';
   end if;
 
-  insert into public.truefalse_scores (member_id, category, best_streak, plays, updated_at)
+  insert into public.survival_scores (member_id, category, best_streak, plays, updated_at)
   values (v_member, p_category, p_streak, 1, now())
   on conflict (member_id, category) do update
-     set best_streak = greatest(public.truefalse_scores.best_streak, excluded.best_streak),
-         plays       = public.truefalse_scores.plays + 1,
+     set best_streak = greatest(public.survival_scores.best_streak, excluded.best_streak),
+         plays       = public.survival_scores.plays + 1,
          updated_at  = now()
   returning best_streak into v_best;
 
   return v_best;
 end $$;
 
-revoke all    on function public.submit_truefalse_score(text, int) from public, anon;
-grant execute on function public.submit_truefalse_score(text, int) to authenticated;
+revoke all    on function public.submit_survival_score(text, int) from public, anon;
+grant execute on function public.submit_survival_score(text, int) to authenticated;
 
 -- Published whole, like flag_scores: every column is already on the board for
 -- everybody, so the WAL carries no secret and no event table has to stand in
@@ -109,9 +121,9 @@ begin
   if not exists (
     select 1 from pg_publication_tables
      where pubname = 'supabase_realtime' and schemaname = 'public'
-       and tablename = 'truefalse_scores'
+       and tablename = 'survival_scores'
   ) then
-    execute 'alter publication supabase_realtime add table public.truefalse_scores';
+    execute 'alter publication supabase_realtime add table public.survival_scores';
   end if;
 end $$;
 

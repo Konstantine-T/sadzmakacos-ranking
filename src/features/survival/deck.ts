@@ -1,5 +1,5 @@
 /**
- * The true/false game's decisions, kept free of React and the network so the
+ * The survival game's decisions, kept free of React and the network so the
  * unit runner can reach them (deck.test.ts).
  */
 
@@ -19,12 +19,9 @@ export interface ApiQuestion {
 export interface Card {
   id: string;
   question: string;
-  /** The answer this card proposes. */
-  shown: string;
-  /** Whether `shown` is the right answer — what a correct swipe must say. */
-  truth: boolean;
-  /** Always the real answer, so a miss can name it. */
-  correctAnswer: string;
+  /** Every option including the answer, already shuffled. */
+  options: string[];
+  answer: string;
   difficulty: Difficulty;
 }
 
@@ -44,39 +41,40 @@ export function tierFor(answered: number): Difficulty {
 }
 
 /**
- * Whether a question survives being turned into a single yes/no claim.
- *
- * "Which of these is NOT a planet? — Mars?" asks the player to negate a
- * negation, and the right swipe is a logic puzzle rather than a fact. Those
- * are dropped. So is anything that is not a plain text question with at least
- * one wrong answer to propose.
+ * Whether a question can be asked: a plain text question with at least one
+ * wrong option, and no option that duplicates another — two identical buttons,
+ * one right and one wrong, would be a coin toss.
  */
 export function usable(q: ApiQuestion): boolean {
-  return (
-    q.type === 'text_choice' &&
-    typeof q.correctAnswer === 'string' &&
-    q.incorrectAnswers.length > 0 &&
-    !/\bnot\b/i.test(q.question.text)
-  );
+  if (q.type !== 'text_choice' || typeof q.correctAnswer !== 'string') return false;
+  if (q.incorrectAnswers.length === 0) return false;
+  const options = [q.correctAnswer, ...q.incorrectAnswers].map((o) => o.trim().toLowerCase());
+  return new Set(options).size === options.length;
+}
+
+function shuffle<T>(items: T[], random: () => number): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 /**
- * Turn a multiple-choice question into a true/false card.
- *
- * A fair coin decides whether the card proposes the right answer or one of the
- * wrong ones, so blind swiping scores nothing better than a coin toss.
+ * Turn an API question into a card. The API lists the right answer apart from
+ * the wrong ones, so the options must be shuffled — otherwise the answer would
+ * always sit in the same place.
  *
  * @param random injectable for tests; `Math.random` in the game.
  */
 export function toCard(q: ApiQuestion, random: () => number = Math.random): Card {
-  const truth = random() < 0.5;
-  const wrong = q.incorrectAnswers[Math.floor(random() * q.incorrectAnswers.length)];
+  const answer = q.correctAnswer.trim();
   return {
     id: q.id,
     question: q.question.text.trim(),
-    shown: (truth ? q.correctAnswer : wrong).trim(),
-    truth,
-    correctAnswer: q.correctAnswer.trim(),
+    options: shuffle([answer, ...q.incorrectAnswers.map((o) => o.trim())], random),
+    answer,
     difficulty: q.difficulty,
   };
 }

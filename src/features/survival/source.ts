@@ -10,7 +10,7 @@ import { freshCards, type ApiQuestion, type Card, type Difficulty } from './deck
  * request at fifty questions and has no memory between requests — deduping
  * across batches is `freshCards`' job.
  *
- * Licensed CC BY-NC 4.0; the credit line is ka.truefalse.credit.
+ * Licensed CC BY-NC 4.0; the credit line is ka.survival.credit.
  */
 const ENDPOINT = 'https://the-trivia-api.com/v2/questions';
 const BATCH = 50;

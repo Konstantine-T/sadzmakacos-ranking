@@ -70,7 +70,7 @@ export const signal = {
  * primary button reads as "tap me", not "you missed".
  *
  * Nothing outside the quiz games — src/features/trivia/, src/features/flags/,
- * src/features/truefalse/ and src/pages/TriviaTestPage.tsx — may use these.
+ * src/features/survival/ and src/pages/TriviaTestPage.tsx — may use these.
  */
 export const quiz = {
   correct: '#4FB477',

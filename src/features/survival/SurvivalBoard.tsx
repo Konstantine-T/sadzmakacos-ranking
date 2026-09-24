@@ -2,10 +2,10 @@ import { Avatar, Box, Stack, Typography } from '@mui/material';
 import { avatarProps } from '@/lib/avatar';
 import { avatarUrl } from '@/lib/supabase';
 import { ka } from '@/i18n/ka';
-import type { TrueFalseRow } from './api';
+import type { SurvivalRow } from './api';
 
-interface TrueFalseBoardProps {
-  rows: TrueFalseRow[];
+interface SurvivalBoardProps {
+  rows: SurvivalRow[];
   myId: string | undefined;
   /** Show only the first N rows — the preview on the game page. */
   limit?: number;
@@ -21,11 +21,11 @@ interface TrueFalseBoardProps {
  * `limit` cuts by position, not by rank: a four-way tie for #3 still shows four
  * rows, and the full board is one tap away.
  */
-export function TrueFalseBoard({ rows, myId, limit }: TrueFalseBoardProps) {
+export function SurvivalBoard({ rows, myId, limit }: SurvivalBoardProps) {
   if (rows.length === 0) {
     return (
       <Typography variant="caption" color="text.disabled" sx={{ px: 1, py: 1.25 }}>
-        {ka.truefalse.empty}
+        {ka.survival.empty}
       </Typography>
     );
   }
@@ -90,7 +90,7 @@ export function TrueFalseBoard({ rows, myId, limit }: TrueFalseBoardProps) {
               component="span"
               sx={{ fontSize: 11, color: 'text.disabled', minWidth: 58, textAlign: 'right' }}
             >
-              {ka.truefalse.plays(row.plays)}
+              {ka.survival.plays(row.plays)}
             </Box>
           </Stack>
         );

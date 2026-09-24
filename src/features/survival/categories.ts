@@ -5,7 +5,7 @@ import { ka } from '@/i18n/ka';
  *
  * Each is its own board: a geography-only streak and a mixed streak are not the
  * same quantity. The ids are the API's own slugs and are also the values the
- * `truefalse_scores.category` check constraint accepts — add one here and that
+ * `survival_scores.category` check constraint accepts — add one here and that
  * constraint is the second place to change.
  *
  * `all` is first on purpose: it is the default pick and the headline board.
@@ -31,5 +31,5 @@ export function isCategory(value: string | undefined): value is Category {
 }
 
 export function categoryLabel(category: Category): string {
-  return ka.truefalse.categories[category];
+  return ka.survival.categories[category];
 }

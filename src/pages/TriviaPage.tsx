@@ -12,8 +12,8 @@ import { TriviaBoard } from '@/features/trivia/TriviaBoard';
 import { TriviaGameCard } from '@/features/trivia/TriviaGameCard';
 import { FlagGameCard } from '@/features/flags/FlagGameCard';
 import { useFlagBoard } from '@/features/flags/api';
-import { TrueFalseGameCard } from '@/features/truefalse/TrueFalseGameCard';
-import { useTrueFalseBoards } from '@/features/truefalse/api';
+import { SurvivalGameCard } from '@/features/survival/SurvivalGameCard';
+import { useSurvivalBoards } from '@/features/survival/api';
 import {
   useMyAnswers,
   useTriviaAllTimeBoard,
@@ -59,7 +59,7 @@ export function TriviaPage() {
   const weekBoard = useTriviaWeekBoard(weekId);
   const allTime = useTriviaAllTimeBoard();
   const flags = useFlagBoard();
-  const truefalse = useTrueFalseBoards();
+  const survival = useSurvivalBoards();
 
   const answeredCount = useMemo(() => {
     const ids = new Set((questions.data ?? []).map((q) => q.id));
@@ -111,10 +111,10 @@ export function TriviaPage() {
                 myBest={flags.rows.find((r) => r.member_id === member?.id)?.best_streak}
                 onOpen={() => navigate('/trivia/flags')}
               />
-              <TrueFalseGameCard
-                topStreak={truefalse.boards.all[0]?.best_streak ?? 0}
-                myBest={truefalse.boards.all.find((r) => r.member_id === member?.id)?.best_streak}
-                onOpen={() => navigate('/trivia/truefalse')}
+              <SurvivalGameCard
+                topStreak={survival.boards.all[0]?.best_streak ?? 0}
+                myBest={survival.boards.all.find((r) => r.member_id === member?.id)?.best_streak}
+                onOpen={() => navigate('/trivia/survival')}
               />
             </Stack>
           )

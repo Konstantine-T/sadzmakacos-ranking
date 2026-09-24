@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import type { Member, TrueFalseScore } from '@/lib/database.types';
+import type { Member, SurvivalScore } from '@/lib/database.types';
 import { CATEGORIES, isCategory, type Category } from './categories';
 
 /**
- * The true/false game's data layer.
+ * The survival game's data layer.
  *
  * Postgres holds one row per member per category with their best streak —
  * eleven boards in one table. The questions never touch Supabase; see
@@ -15,11 +15,11 @@ import { CATEGORIES, isCategory, type Category } from './categories';
  * nothing but უნარების ტესტები feeds ტრივიას რანკი.
  */
 
-export const truefalseKeys = {
-  boards: ['truefalse', 'boards'] as const,
+export const survivalKeys = {
+  boards: ['survival', 'boards'] as const,
 };
 
-export interface TrueFalseRow {
+export interface SurvivalRow {
   member_id: string;
   nickname: string;
   avatar_url: string | null;
@@ -28,7 +28,7 @@ export interface TrueFalseRow {
   rank: number;
 }
 
-export type TrueFalseBoards = Record<Category, TrueFalseRow[]>;
+export type SurvivalBoards = Record<Category, SurvivalRow[]>;
 
 const collator = new Intl.Collator('ka');
 
@@ -39,7 +39,7 @@ const collator = new Intl.Collator('ka');
  * `plays` breaks a tie ascending: the same streak reached in fewer attempts
  * sits on top. Neither it nor the nickname can move the rank number.
  */
-function rank(rows: Omit<TrueFalseRow, 'rank'>[]): TrueFalseRow[] {
+function rank(rows: Omit<SurvivalRow, 'rank'>[]): SurvivalRow[] {
   const sorted = [...rows].sort(
     (a, b) =>
       b.best_streak - a.best_streak ||
@@ -59,13 +59,13 @@ function rank(rows: Omit<TrueFalseRow, 'rank'>[]): TrueFalseRow[] {
 }
 
 /** Every category's board, ranked. One fetch serves all eleven. */
-export function useTrueFalseBoards() {
+export function useSurvivalBoards() {
   const query = useQuery({
-    queryKey: truefalseKeys.boards,
+    queryKey: survivalKeys.boards,
     staleTime: 30_000,
-    queryFn: async (): Promise<{ scores: TrueFalseScore[]; members: Member[] }> => {
+    queryFn: async (): Promise<{ scores: SurvivalScore[]; members: Member[] }> => {
       const [{ data: scores, error: e1 }, { data: members, error: e2 }] = await Promise.all([
-        supabase.from('truefalse_scores').select('*'),
+        supabase.from('survival_scores').select('*'),
         supabase.from('members').select('*').eq('is_active', true),
       ]);
       if (e1) throw e1;
@@ -74,11 +74,11 @@ export function useTrueFalseBoards() {
     },
   });
 
-  const boards = useMemo<TrueFalseBoards>(() => {
+  const boards = useMemo<SurvivalBoards>(() => {
     const members = new Map((query.data?.members ?? []).map((m) => [m.id, m]));
     const grouped = Object.fromEntries(
-      CATEGORIES.map((c) => [c, [] as Omit<TrueFalseRow, 'rank'>[]]),
-    ) as Record<Category, Omit<TrueFalseRow, 'rank'>[]>;
+      CATEGORIES.map((c) => [c, [] as Omit<SurvivalRow, 'rank'>[]]),
+    ) as Record<Category, Omit<SurvivalRow, 'rank'>[]>;
 
     for (const s of query.data?.scores ?? []) {
       const m = members.get(s.member_id);
@@ -94,7 +94,7 @@ export function useTrueFalseBoards() {
 
     return Object.fromEntries(
       CATEGORIES.map((c) => [c, rank(grouped[c])]),
-    ) as TrueFalseBoards;
+    ) as SurvivalBoards;
   }, [query.data]);
 
   return { boards, isPending: query.isPending };
@@ -107,7 +107,7 @@ export function useTrueFalseBoards() {
  * harmless — it still counts as a play, which is what lets the board tiebreak
  * on persistence.
  */
-export function useSubmitTrueFalseScore() {
+export function useSubmitSurvivalScore() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -117,7 +117,7 @@ export function useSubmitTrueFalseScore() {
       category: Category;
       streak: number;
     }): Promise<number> => {
-      const { data, error } = await supabase.rpc('submit_truefalse_score', {
+      const { data, error } = await supabase.rpc('submit_survival_score', {
         p_category: category,
         p_streak: streak,
       });
@@ -125,7 +125,7 @@ export function useSubmitTrueFalseScore() {
       return (data as number) ?? 0;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: truefalseKeys.boards });
+      queryClient.invalidateQueries({ queryKey: survivalKeys.boards });
     },
   });
 }

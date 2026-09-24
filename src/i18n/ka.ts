@@ -324,9 +324,9 @@ export const ka = {
     close: "დახურვა",
   },
 
-  truefalse: {
-    name: "მართალია თუ ტყუილი?",
-    subtitle: "ერთი შეცდომა და თამაში დასრულდა",
+  survival: {
+    name: "გადარჩენა",
+    subtitle: "ტრივია ზედიზედ — ერთი შეცდომა და დასრულდა",
     start: "თამაშის დაწყება",
     again: "თავიდან",
     pickCategory: "კატეგორია",
@@ -337,12 +337,7 @@ export const ka = {
     best: "რეკორდი",
     leader: "ლიდერი",
     plays: (n: number) => `${n} თამაში`,
-    isIt: "პასუხია:",
-    yes: "მართალია",
-    no: "ტყუილია",
-    right: "სწორია!",
-    wrong: "შეცდომა",
-    correctWas: (answer: string) => `სწორი პასუხი: ${answer}`,
+    over: (n: number) => `თამაში დასრულდა — ${n} ზედიზედ`,
     perfect: "კითხვები ამოიწურა — ყველაფერი გამოიცანი!",
     english: "კითხვები ინგლისურადაა",
     loadFailed: "კითხვები ვერ ჩაიტვირთა.",

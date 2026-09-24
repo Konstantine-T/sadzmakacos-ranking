@@ -1,7 +1,7 @@
 import { Button, Paper, Stack, Typography } from '@mui/material';
 import { ka } from '@/i18n/ka';
 
-interface TrueFalseGameCardProps {
+interface SurvivalGameCardProps {
   /** The ყველა board's leading streak, or 0 when nobody has played. */
   topStreak: number;
   /** Your own ყველა best, when you have one. */
@@ -10,21 +10,21 @@ interface TrueFalseGameCardProps {
 }
 
 /**
- * The true/false game's card on the games tab.
+ * The survival game's card on the games tab.
  *
  * Same shape as the flag card: no week and nothing to finish, just the streak
  * to beat. Only the mixed (ყველა) board is quoted here — eleven numbers do not
  * fit a card, and the mixed board is the headline one.
  */
-export function TrueFalseGameCard({ topStreak, myBest, onOpen }: TrueFalseGameCardProps) {
+export function SurvivalGameCard({ topStreak, myBest, onOpen }: SurvivalGameCardProps) {
   return (
     <Paper
       elevation={0}
       sx={{ p: 2, borderRadius: '16px', border: '1px solid', borderColor: 'border' }}
     >
-      <Typography sx={{ fontSize: 15, fontWeight: 700 }}>{ka.truefalse.name}</Typography>
+      <Typography sx={{ fontSize: 15, fontWeight: 700 }}>{ka.survival.name}</Typography>
       <Typography variant="caption" color="text.secondary">
-        {ka.truefalse.subtitle}
+        {ka.survival.subtitle}
       </Typography>
 
       <Stack direction="row" spacing={3} sx={{ my: 1.75 }}>
@@ -33,7 +33,7 @@ export function TrueFalseGameCard({ topStreak, myBest, onOpen }: TrueFalseGameCa
             {topStreak}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {ka.truefalse.leader}
+            {ka.survival.leader}
           </Typography>
         </Stack>
         {myBest !== undefined && (
@@ -42,14 +42,14 @@ export function TrueFalseGameCard({ topStreak, myBest, onOpen }: TrueFalseGameCa
               {myBest}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {ka.truefalse.best}
+              {ka.survival.best}
             </Typography>
           </Stack>
         )}
       </Stack>
 
       <Button fullWidth variant="contained" sx={{ height: 48 }} onClick={onOpen}>
-        {ka.truefalse.start}
+        {ka.survival.start}
       </Button>
     </Paper>
   );

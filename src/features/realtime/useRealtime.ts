@@ -9,7 +9,7 @@ import { weekKeys } from '@/features/week/api';
 import { notificationKeys } from '@/features/notifications/api';
 import { triviaKeys } from '@/features/trivia/api';
 import { flagKeys } from '@/features/flags/api';
-import { truefalseKeys } from '@/features/truefalse/api';
+import { survivalKeys } from '@/features/survival/api';
 import { chatKeys } from '@/features/chat/api';
 
 type Signal =
@@ -22,7 +22,7 @@ type Signal =
   | 'weeks'
   | 'trivia'
   | 'flags'
-  | 'truefalse'
+  | 'survival'
   | 'chat'
   | 'chat_reaction';
 
@@ -84,8 +84,8 @@ export function useRealtime(weekId: number | undefined) {
       if (signals.has('flags')) {
         queryClient.invalidateQueries({ queryKey: flagKeys.board });
       }
-      if (signals.has('truefalse')) {
-        queryClient.invalidateQueries({ queryKey: truefalseKeys.boards });
+      if (signals.has('survival')) {
+        queryClient.invalidateQueries({ queryKey: survivalKeys.boards });
       }
       if (signals.has('trivia')) {
         if (weekId !== undefined) {
@@ -146,11 +146,11 @@ export function useRealtime(weekId: number | undefined) {
         { event: '*', schema: 'public', table: 'flag_scores' },
         () => schedule('flags'),
       )
-      // truefalse_scores likewise: published whole, nothing on it is secret.
+      // survival_scores likewise: published whole, nothing on it is secret.
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'truefalse_scores' },
-        () => schedule('truefalse'),
+        { event: '*', schema: 'public', table: 'survival_scores' },
+        () => schedule('survival'),
       )
       // `messages` is signed, so it is published and subscribed to directly.
       // `message_reactions` is select-own and never published — chat_events

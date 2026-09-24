@@ -2,9 +2,9 @@
  * Run with:
  *   npm run test:unit
  *
- * The true/false game's decisions: where the difficulty ramp turns, what a coin
- * flip does to a question, which questions cannot be asked as a yes/no claim,
- * and that nothing is asked twice in one run.
+ * The survival game's decisions: where the difficulty ramp turns, what a card
+ * is built from, which questions cannot be asked, and that nothing is asked
+ * twice in one run.
  */
 
 import assert from 'node:assert/strict';
@@ -25,12 +25,6 @@ function question(overrides: Partial<ApiQuestion> = {}): ApiQuestion {
   };
 }
 
-/** A `random` that returns the given values in order. */
-function sequence(...values: number[]) {
-  let i = 0;
-  return () => values[i++ % values.length];
-}
-
 // ------------------------------------------------------------------ the ramp --
 
 test('the first ten cards are easy', () => {
@@ -48,39 +42,34 @@ test('everything after twenty is hard, forever', () => {
   assert.equal(tierFor(500), 'hard');
 });
 
-// ------------------------------------------------------------- the coin flip --
+// ------------------------------------------------------------------ the card --
 
-test('heads proposes the right answer, and the card is true', () => {
-  const card = toCard(question(), sequence(0.1, 0));
-  assert.equal(card.truth, true);
-  assert.equal(card.shown, 'Eustachian tube');
+test('a card offers the answer and every wrong option, once each', () => {
+  const card = toCard(question());
+  assert.equal(card.answer, 'Eustachian tube');
+  assert.deepEqual(
+    [...card.options].sort(),
+    ['Eustachian tube', 'Maxillary bulb', 'Optic nerve', 'Philtrum'],
+  );
 });
 
-test('tails proposes a wrong answer, and the card is false', () => {
-  const card = toCard(question(), sequence(0.9, 0.5));
-  assert.equal(card.truth, false);
-  assert.equal(card.shown, 'Maxillary bulb');
-  assert.equal(card.correctAnswer, 'Eustachian tube', 'a miss must still be able to name it');
-});
-
-test('a false card never proposes the right answer', () => {
-  for (let r = 0; r < 1; r += 0.05) {
-    const card = toCard(question(), sequence(0.9, r));
-    assert.notEqual(card.shown, card.correctAnswer);
+test('the answer does not always sit in the same place', () => {
+  // The API lists the right answer apart from the wrong ones. Unshuffled, it
+  // would be the first button every time.
+  const positions = new Set<number>();
+  for (let i = 0; i < 200; i++) {
+    const card = toCard(question());
+    positions.add(card.options.indexOf(card.answer));
   }
+  assert.equal(positions.size, 4);
 });
 
-// ------------------------------------------------------------------ the filter --
-
-test('a question with "not" in it is dropped, in any case', () => {
-  assert.equal(usable(question({ question: { text: 'Which of these is NOT a planet?' } })), false);
-  assert.equal(usable(question({ question: { text: 'Which is not a mammal?' } })), false);
+test('options are trimmed, so the answer still matches its button', () => {
+  const card = toCard(question({ correctAnswer: ' Eustachian tube ' }));
+  assert.ok(card.options.includes(card.answer));
 });
 
-test('"not" inside another word does not drop a question', () => {
-  assert.equal(usable(question({ question: { text: 'Which note is middle C?' } })), true);
-  assert.equal(usable(question({ question: { text: 'Who wrote Nothing Compares 2 U?' } })), true);
-});
+// ---------------------------------------------------------------- the filter --
 
 test('image and free-text questions are dropped', () => {
   assert.equal(usable(question({ type: 'image_choice' })), false);
@@ -89,6 +78,14 @@ test('image and free-text questions are dropped', () => {
 
 test('a question with no wrong answers is dropped', () => {
   assert.equal(usable(question({ incorrectAnswers: [] })), false);
+});
+
+test('a question whose options repeat is dropped, whatever the case', () => {
+  assert.equal(usable(question({ incorrectAnswers: ['eustachian tube', 'Philtrum'] })), false);
+});
+
+test('"NOT" questions are fine with four options on screen', () => {
+  assert.equal(usable(question({ question: { text: 'Which of these is NOT a planet?' } })), true);
 });
 
 // ---------------------------------------------------------------- the dedupe --
