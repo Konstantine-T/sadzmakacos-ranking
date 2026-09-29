@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Link as RouterLink,
   Outlet,
@@ -18,6 +18,7 @@ import { ka } from "@/i18n/ka";
 import { useOpenWeek, useTurnout } from "@/features/week/api";
 import { NotificationBell } from "@/features/notifications/NotificationBell";
 import { useUnreadCounts } from "@/features/notifications/api";
+import { syncPush } from "@/features/notifications/push";
 import { UnreadChip } from "@/components/UnreadChip";
 import { NavRail } from "./NavRail";
 import { SideRail } from "./SideRail";
@@ -82,6 +83,12 @@ export function AppShell() {
   const wide = useWideLayout();
   const widest = useWidestLayout();
   const turnout = useTurnout(week.data?.id);
+
+  // Whatever the browser dropped since last time, put back on launch — not
+  // only when someone happens to open their profile.
+  useEffect(() => {
+    void syncPush();
+  }, []);
 
   const activeIndex = useMemo(() => {
     const path = location.pathname;

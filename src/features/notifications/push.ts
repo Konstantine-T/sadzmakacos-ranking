@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { pushSyncAction, type PushIntent } from './pushSync';
 
 /**
  * Subscribing a device to push.
@@ -41,20 +42,33 @@ function urlBase64ToBytes(base64: string): ArrayBuffer {
 }
 
 /**
- * Ask for permission, subscribe, and record the device.
- *
- * Must be called from a real user gesture — Safari ignores a permission request
- * that did not come from a tap, silently, which looks exactly like a bug.
- *
- * @returns true when the device is now subscribed.
+ * What the member last chose on this device, kept so that a subscription the
+ * browser drops can be put back without overriding one they turned off
+ * (see pushSync.ts). localStorage can throw or come back empty; either reads
+ * as "never chose", which never subscribes anyone.
  */
-export async function enablePush(): Promise<boolean> {
-  if (!pushSupported() || !VAPID_PUBLIC) return false;
+const INTENT_KEY = 'push-intent';
 
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return false;
+function readIntent(): PushIntent {
+  try {
+    const value = localStorage.getItem(INTENT_KEY);
+    return value === 'on' || value === 'off' ? value : null;
+  } catch {
+    return null;
+  }
+}
 
-  const registration = await navigator.serviceWorker.ready;
+function writeIntent(intent: 'on' | 'off') {
+  try {
+    localStorage.setItem(INTENT_KEY, intent);
+  } catch {
+    // Nothing to do: the next launch just cannot heal this device.
+  }
+}
+
+/** Subscribe (or reuse the subscription) and record the device server-side. */
+async function subscribeAndSave(registration: ServiceWorkerRegistration): Promise<boolean> {
+  if (!VAPID_PUBLIC) return false;
 
   // An existing subscription is reused: re-subscribing would issue a new
   // endpoint and leave the old row behind, so the member would get every
@@ -80,9 +94,31 @@ export async function enablePush(): Promise<boolean> {
   return true;
 }
 
+/**
+ * Ask for permission, subscribe, and record the device.
+ *
+ * Must be called from a real user gesture — Safari ignores a permission request
+ * that did not come from a tap, silently, which looks exactly like a bug.
+ *
+ * @returns true when the device is now subscribed.
+ */
+export async function enablePush(): Promise<boolean> {
+  if (!pushSupported() || !VAPID_PUBLIC) return false;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return false;
+
+  const subscribed = await subscribeAndSave(await navigator.serviceWorker.ready);
+  if (subscribed) writeIntent('on');
+  return subscribed;
+}
+
 /** Unsubscribe this device and forget it server-side. */
 export async function disablePush(): Promise<void> {
   if (!pushSupported()) return;
+  // First, so that a failure below can never be "healed" back on next launch.
+  writeIntent('off');
+
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.getSubscription();
   if (!subscription) return;
@@ -91,9 +127,46 @@ export async function disablePush(): Promise<void> {
   await subscription.unsubscribe();
 }
 
+let syncing: Promise<void> | null = null;
+
+/**
+ * Put this device's push back the way the member left it. Called once per
+ * launch by the shell, for an active member only (the RPC needs one).
+ *
+ * Never throws and never prompts: at worst it does nothing, and the profile
+ * card offers the button exactly as before.
+ */
+export function syncPush(): Promise<void> {
+  syncing ??= (async () => {
+    if (!pushSupported()) return;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscribed = (await registration.pushManager.getSubscription()) !== null;
+      const action = pushSyncAction({
+        permission: Notification.permission,
+        subscribed,
+        intent: readIntent(),
+      });
+      if (action === 'none') return;
+
+      // Also stamps intent on devices subscribed before it was recorded, so
+      // they are protected from the next drop too.
+      if (await subscribeAndSave(registration)) writeIntent('on');
+    } catch {
+      // Some browsers refuse subscribe() outside a gesture. The card still works.
+    }
+  })();
+  return syncing;
+}
+
 /** Is THIS device subscribed? Another phone being subscribed says nothing. */
 export async function isPushEnabled(): Promise<boolean> {
-  if (!pushSupported() || Notification.permission !== 'granted') return false;
+  if (!pushSupported()) return false;
+  // Let the heal finish first, or the card reads "off" for a device that is
+  // about to be back on. Started here too, not just awaited: on a cold load of
+  // /me the card's effect runs before the shell's.
+  await syncPush();
+  if (Notification.permission !== 'granted') return false;
   const registration = await navigator.serviceWorker.ready;
   return (await registration.pushManager.getSubscription()) !== null;
 }

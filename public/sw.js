@@ -27,44 +27,74 @@ self.addEventListener('fetch', () => {
 
 /* ---------------------------------------------------------------- push --- */
 
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
+/*
+  EVERY PUSH ENDS IN showNotification(). NO EXCEPTIONS, NO EARLY RETURNS.
 
-  let payload;
-  try {
-    payload = event.data.json();
-  } catch {
+  The subscription is made with `userVisibleOnly: true`, which is a promise to
+  the browser, and WebKit enforces it: a push that does not call
+  showNotification() counts as a silent push, and after three of them — ever;
+  the count does not reset — iOS revokes every subscription this origin has.
+  The member finds the profile card saying notifications are off, with nothing
+  on their side having turned them off. That is exactly what happened while
+  this handler dropped chat pushes for a focused app.
+
+  So a push we do not want to surface is still shown — silently, under its own
+  tag — and closed at once. Chrome and Firefox do not need this (a visible tab
+  exempts the push there), but it costs them nothing.
+*/
+const QUIET_TAG = 'quiet';
+
+self.addEventListener('push', (event) => {
+  event.waitUntil(handlePush(event));
+});
+
+async function handlePush(event) {
+  const payload = readPayload(event);
+
+  if (payload && !(await isNoise(payload))) {
+    await self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      // Same tag per kind, so ten chat messages replace each other in the
+      // shade rather than burying everything else you had waiting.
+      tag: payload.kind,
+      renotify: true,
+      data: { url: payload.url || '/' },
+    });
     return;
   }
 
-  event.waitUntil(
-    (async () => {
-      /*
-        A chat message while you are already looking at the app is noise. The
-        server cannot know whether a window is focused, so the decision is made
-        here, where it is knowable.
+  // Its own tag, so closing it can never take a real chat notification with it.
+  await self.registration.showNotification(payload?.title ?? '', {
+    tag: QUIET_TAG,
+    silent: true,
+  });
+  const quiet = await self.registration.getNotifications({ tag: QUIET_TAG });
+  quiet.forEach((n) => n.close());
+}
 
-        Only chat is suppressed. A rank change or a new post is still worth
-        surfacing even with the app open, because you may be on another screen.
-      */
-      if (payload.kind === 'chat') {
-        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-        if (windows.some((c) => c.focused)) return;
-      }
+function readPayload(event) {
+  try {
+    return event.data ? event.data.json() : null;
+  } catch {
+    return null;
+  }
+}
 
-      await self.registration.showNotification(payload.title, {
-        body: payload.body,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        // Same tag per kind, so ten chat messages replace each other in the
-        // shade rather than burying everything else you had waiting.
-        tag: payload.kind,
-        renotify: true,
-        data: { url: payload.url || '/' },
-      });
-    })(),
-  );
-});
+/*
+  A chat message while you are already looking at the app is noise. The server
+  cannot know whether a window is focused, so the decision is made here, where
+  it is knowable.
+
+  Only chat is suppressed. A rank change or a new post is still worth surfacing
+  even with the app open, because you may be on another screen.
+*/
+async function isNoise(payload) {
+  if (payload.kind !== 'chat') return false;
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  return windows.some((c) => c.focused);
+}
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
