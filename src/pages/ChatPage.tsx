@@ -1,12 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Box, ButtonBase, Divider, Skeleton, Stack, TextField, Typography } from '@mui/material';
-import SendIcon from '@mui/icons-material/SendRounded';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Box, ButtonBase, Divider, Skeleton, Stack, Typography } from '@mui/material';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useToast } from '@/app/providers/ToastProvider';
 import { PageTransition } from '@/components/PageTransition';
 import { useMemberMap } from '@/features/members/api';
 import { useRealtime } from '@/features/realtime/useRealtime';
 import { MessageBubble } from '@/features/chat/MessageBubble';
+import { Composer } from '@/features/chat/Composer';
 import {
   useMarkChatRead,
   useMessageReactions,
@@ -17,9 +17,9 @@ import {
   useTyping,
 } from '@/features/chat/api';
 import { dayKey, formatDay } from '@/lib/time';
+import type { Reaction } from '@/theme/tokens';
 import { ka } from '@/i18n/ka';
 
-const MAX = 500;
 /** A gap this long starts a new run even for the same author. */
 const RUN_BREAK_MS = 5 * 60_000;
 
@@ -46,7 +46,6 @@ export function ChatPage() {
   const toggle = useToggleMessageReaction(member?.id);
   const { typing, setTypingSelf } = useTyping(member?.id, member?.nickname);
 
-  const [draft, setDraft] = useState('');
   const [pinned, setPinned] = useState(true);
   const [unseen, setUnseen] = useState(0);
 
@@ -102,19 +101,28 @@ export function ChatPage() {
     setPinned(true);
   };
 
-  const submit = () => {
-    const body = draft.trim();
-    if (!body || send.isPending) return;
-    setDraft('');
-    setTypingSelf(false);
-    setPinned(true);
-    send.mutate(body, {
-      onError: (e) => {
-        setDraft(body); // give it back rather than losing what they wrote
-        toastError(e);
-      },
-    });
-  };
+  const sendMutate = send.mutate;
+  const sendBody = useCallback(
+    (body: string, giveBack: () => void) => {
+      setPinned(true);
+      sendMutate(body, {
+        onError: (e) => {
+          giveBack(); // rather than losing what they wrote
+          toastError(e);
+        },
+      });
+    },
+    [sendMutate, toastError],
+  );
+
+  // One callback for every bubble, so a memoized bubble sees the same prop on
+  // every render and stays put. An inline arrow per row defeated that.
+  const toggleMutate = toggle.mutate;
+  const reactTo = useCallback(
+    (messageId: number, emoji: Reaction) =>
+      toggleMutate({ messageId, emoji }, { onError: toastError }),
+    [toggleMutate, toastError],
+  );
 
   const typingLine =
     typing.length === 0
@@ -167,9 +175,7 @@ export function ChatPage() {
                   leading={leading}
                   counts={byMessage.get(message.id)}
                   myReactions={mine.get(message.id)}
-                  onReact={(emoji) =>
-                    toggle.mutate({ messageId: message.id, emoji }, { onError: toastError })
-                  }
+                  onReact={reactTo}
                 />
               </Box>
             ))
@@ -207,58 +213,7 @@ export function ChatPage() {
           </Typography>
         </Box>
 
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="flex-end"
-          sx={{
-            p: 1.5,
-            pb: 'calc(12px + env(safe-area-inset-bottom))',
-            borderTop: '1px solid',
-            borderColor: 'hairline',
-            bgcolor: 'background.paper',
-          }}
-        >
-          <TextField
-            fullWidth
-            multiline
-            maxRows={4}
-            size="small"
-            value={draft}
-            placeholder={ka.chat.placeholder}
-            inputProps={{ maxLength: MAX }}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setTypingSelf(e.target.value.trim().length > 0);
-            }}
-            onKeyDown={(e) => {
-              // Enter sends, Shift+Enter breaks the line — but only with a
-              // keyboard. On a phone Enter must insert a newline, or the
-              // on-screen return key becomes a send button nobody asked for.
-              if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '20px' } }}
-          />
-          <ButtonBase
-            onClick={submit}
-            disabled={draft.trim().length === 0 || send.isPending}
-            aria-label={ka.chat.send}
-            sx={{
-              width: 44,
-              height: 44,
-              flex: 'none',
-              borderRadius: 999,
-              bgcolor: draft.trim() ? 'primary.main' : 'surface2',
-              color: draft.trim() ? 'primary.contrastText' : 'text.disabled',
-              transition: 'background-color .16s linear',
-            }}
-          >
-            <SendIcon fontSize="small" />
-          </ButtonBase>
-        </Stack>
+        <Composer sending={send.isPending} onTyping={setTypingSelf} onSend={sendBody} />
       </Stack>
     </PageTransition>
   );

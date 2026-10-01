@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Avatar, Box, ButtonBase, Popover, Stack, Typography } from '@mui/material';
 import { avatarProps } from '@/lib/avatar';
 import { avatarUrl } from '@/lib/supabase';
@@ -15,7 +15,8 @@ interface MessageBubbleProps {
   leading: boolean;
   counts: Record<string, number> | undefined;
   myReactions: Set<string> | undefined;
-  onReact: (emoji: Reaction) => void;
+  /** Takes the message id so one stable callback serves every bubble. */
+  onReact: (messageId: number, emoji: Reaction) => void;
 }
 
 /**
@@ -29,8 +30,13 @@ interface MessageBubbleProps {
  * Reactions are shown as counts with no names, and your own are outlined. That
  * is not an oversight — `message_reactions` is select-own for the same reason
  * post_reactions is, so who reacted is genuinely not knowable here.
+ *
+ * Memoized, because the room renders two hundred of these and almost nothing
+ * that re-renders ChatPage — the typing line, the "new messages" pill, a send
+ * in flight — changes any one of them. Every prop is stable between renders
+ * unless that message's own data moved; keep it that way when adding one.
  */
-export function MessageBubble({
+export const MessageBubble = memo(function MessageBubble({
   message,
   author,
   mine,
@@ -108,7 +114,7 @@ export function MessageBubble({
               return (
                 <ButtonBase
                   key={emoji}
-                  onClick={() => onReact(emoji as Reaction)}
+                  onClick={() => onReact(message.id, emoji as Reaction)}
                   sx={{
                     px: 0.75,
                     height: 24,
@@ -146,7 +152,7 @@ export function MessageBubble({
             <ButtonBase
               key={emoji}
               onClick={() => {
-                onReact(emoji);
+                onReact(message.id, emoji);
                 setAnchor(null);
               }}
               sx={{ width: 44, height: 44, borderRadius: 999, fontSize: 20 }}
@@ -158,4 +164,4 @@ export function MessageBubble({
       </Popover>
     </Stack>
   );
-}
+});

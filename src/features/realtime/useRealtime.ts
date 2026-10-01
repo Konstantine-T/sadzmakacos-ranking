@@ -10,7 +10,8 @@ import { notificationKeys } from '@/features/notifications/api';
 import { triviaKeys } from '@/features/trivia/api';
 import { flagKeys } from '@/features/flags/api';
 import { survivalKeys } from '@/features/survival/api';
-import { chatKeys } from '@/features/chat/api';
+import { chatKeys, removeMessage, upsertMessage } from '@/features/chat/api';
+import type { ChatMessage } from '@/lib/database.types';
 
 type Signal =
   | 'votes'
@@ -75,7 +76,7 @@ export function useRealtime(weekId: number | undefined) {
         queryClient.invalidateQueries({ queryKey: pollKeys.active });
       }
       if (signals.has('chat')) {
-        queryClient.invalidateQueries({ queryKey: chatKeys.messages });
+        // Not chatKeys.messages — the handler below already patched the row in.
         queryClient.invalidateQueries({ queryKey: chatKeys.unread });
       }
       if (signals.has('chat_reaction')) {
@@ -155,10 +156,22 @@ export function useRealtime(weekId: number | undefined) {
       // `messages` is signed, so it is published and subscribed to directly.
       // `message_reactions` is select-own and never published — chat_events
       // carries an identity-free ping for it, exactly as vote_events does.
+      //
+      // The one handler that writes to the cache itself, and does it before the
+      // debounce: a chat message is the row, not a ping to go and fetch it, and
+      // a conversation cannot wait 400ms plus a round trip per line.
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'messages' },
-        () => schedule('chat'),
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            const id = (payload.old as Partial<ChatMessage>).id;
+            if (id !== undefined) removeMessage(queryClient, id);
+          } else {
+            upsertMessage(queryClient, payload.new as ChatMessage);
+          }
+          schedule('chat');
+        },
       )
       .on(
         'postgres_changes',

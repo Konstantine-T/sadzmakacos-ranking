@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { ChatMessage, MessageReactionCount } from '@/lib/database.types';
 import type { Reaction } from '@/theme/tokens';
+import { PAGE_SIZE, mergeFetched, upsertRow } from './room';
 
 /**
  * ჩატი's data layer.
@@ -31,10 +32,8 @@ export const chatKeys = {
   unread: ['chat', 'unread'] as const,
 };
 
-/** How many messages the room keeps on screen. Twenty friends, not a support desk. */
-export const PAGE_SIZE = 200;
-
 export function useMessages() {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: chatKeys.messages,
     staleTime: 30_000,
@@ -47,9 +46,35 @@ export function useMessages() {
       if (error) throw error;
       // Newest-first from the database so LIMIT takes the right end; oldest-first
       // on screen, because that is the direction a conversation reads.
-      return (data ?? []).slice().reverse();
+      // Merged with the cache rather than replacing it, so a row realtime
+      // patched in while this request was in flight survives (room.ts).
+      return mergeFetched(
+        (data ?? []).slice().reverse(),
+        queryClient.getQueryData<ChatMessage[]>(chatKeys.messages) ?? [],
+      );
     },
   });
+}
+
+/**
+ * Fold one realtime row into the cached room, or take one out.
+ *
+ * `messages` is published whole, so the payload IS the row and a refetch would
+ * add nothing. Invalidating instead waited out the 400ms debounce and then
+ * pulled all two hundred rows again before anything appeared — the delay
+ * between someone sending and you seeing it. No cache yet means the room has
+ * never been opened, and its first fetch will include the row anyway.
+ */
+export function upsertMessage(queryClient: QueryClient, row: ChatMessage) {
+  queryClient.setQueryData<ChatMessage[]>(chatKeys.messages, (old) =>
+    old ? upsertRow(old, row) : old,
+  );
+}
+
+export function removeMessage(queryClient: QueryClient, id: number) {
+  queryClient.setQueryData<ChatMessage[]>(chatKeys.messages, (old) =>
+    old?.filter((m) => m.id !== id),
+  );
 }
 
 export function useMessageReactions() {
@@ -178,11 +203,19 @@ export function useMarkChatRead(active: boolean, newestId: number | undefined) {
  * postgres_changes, writes to no cache, and is created and torn down with the
  * chat screen. Typing is ephemeral by nature: presence state costs no table, no
  * rows and no prune job, and vanishes correctly when a phone goes to sleep.
+ *
+ * Presence is sent on the EDGES only — when you start typing and when you stop
+ * — never per keystroke. Each `track()` is a websocket message that fans out as
+ * a sync to everyone with the room open, and every sync used to re-render each
+ * of their rooms. Tracking per keystroke turned one person typing into a stream
+ * of full re-renders on every phone in the group.
  */
 export function useTyping(memberId: string | undefined, nickname: string | undefined) {
   const [typing, setTyping] = useState<string[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const stopTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  /** What we last told the channel, so a keystroke that changes nothing sends nothing. */
+  const sent = useRef(false);
 
   useEffect(() => {
     if (!memberId || !nickname) return;
@@ -191,6 +224,7 @@ export function useTyping(memberId: string | undefined, nickname: string | undef
       config: { presence: { key: memberId } },
     });
     channelRef.current = channel;
+    sent.current = false;
 
     const read = () => {
       const state = channel.presenceState<{ nickname: string; typing: boolean }>();
@@ -200,7 +234,10 @@ export function useTyping(memberId: string | undefined, nickname: string | undef
         const latest = entries[entries.length - 1];
         if (latest?.typing) names.push(latest.nickname);
       }
-      setTyping(names);
+      // A sync that changes nobody's state must not re-render the room.
+      setTyping((prev) =>
+        prev.length === names.length && prev.every((n, i) => n === names[i]) ? prev : names,
+      );
     };
 
     channel
@@ -216,17 +253,21 @@ export function useTyping(memberId: string | undefined, nickname: string | undef
     };
   }, [memberId, nickname]);
 
-  /** Call on every keystroke. Self-clears, so there is no "stuck typing" state. */
+  /**
+   * Call on every keystroke — it sends only when the state flips. Self-clears
+   * 3s after the last keystroke, so there is no "stuck typing" state.
+   */
   const setTypingSelf = (isTyping: boolean) => {
     const channel = channelRef.current;
     if (!channel || !nickname) return;
-    void channel.track({ nickname, typing: isTyping });
+    const announce = (value: boolean) => {
+      if (sent.current === value) return;
+      sent.current = value;
+      void channel.track({ nickname, typing: value });
+    };
     if (stopTimer.current) clearTimeout(stopTimer.current);
-    if (isTyping) {
-      stopTimer.current = setTimeout(() => {
-        void channel.track({ nickname, typing: false });
-      }, 3000);
-    }
+    announce(isTyping);
+    if (isTyping) stopTimer.current = setTimeout(() => announce(false), 3000);
   };
 
   return { typing, setTypingSelf };

@@ -193,7 +193,11 @@ the group, the fix, and what deliberately did not change.
 - **`src/features/realtime/useRealtime.ts` is the only Supabase channel in the
   app.** It debounces every signal for 400ms and then invalidates the affected
   keys, so a burst of twenty votes causes one refetch. A new realtime-driven
-  feature adds a `Signal` there rather than a second subscription.
+  feature adds a `Signal` there rather than a second subscription. The one
+  exception is chat `messages`: being published whole, the payload *is* the
+  row, so it is patched straight into the cache before the debounce
+  (`src/features/chat/room.ts`, pinned by `room.test.ts`) instead of triggering
+  a 200-row refetch per line.
 - Freshness comes from that channel, not from polling: the shared `QueryClient`
   sets `staleTime: 30s` and no refetch interval. Closed-week queries use
   `staleTime: Infinity` — rule 3.
